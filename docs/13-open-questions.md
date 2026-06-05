@@ -1,0 +1,83 @@
+# Open questions and review flags
+
+This file collects every `[REVIEW]` item from the docs.
+
+## Naming and flavor
+
+- [REVIEW] Choose a working title before creating a repository, template, and Slack bot identity. Current default: Workspace Frontier.
+- [REVIEW] Decide how heavily to lean into Coder product terms. Too much internal jargon may be funny for employees but confusing for future reuse.
+
+## Map and world
+
+- [REVIEW] Decide whether the map wraps around at edges. Recommendation: no wrapping for Season 0.
+- [REVIEW] Decide whether players can spawn near coworkers from their team. Recommendation: do not use org chart or team data for placement.
+- [REVIEW] Include special tiles in Season 0 as rare flavor-only discoveries, or defer them entirely. Recommendation: include a few non-interactive discoveries only if simple.
+
+## Economy
+
+- [REVIEW] Recommendation: exclude credits from Season 0 unless a clear sink exists. Keep them as Version 2 trade currency.
+- [REVIEW] Decide whether rare resources should be public after trade, after scouting, or only after a stronger scan.
+- [REVIEW] Decide storage cap strictness. Recommendation: generous caps in Season 0.
+- [REVIEW] Starting rates and costs should be playtested quickly.
+
+## Upgrades and progression
+
+- [REVIEW] Confirm whether upgrades should have infinite levels or capped tiers. Recommendation: capped tiers for Season 0.
+
+## Actions and timers
+
+- [REVIEW] Decide whether all builds should be instant in Season 0. Recommendation: upgrades instant, scout and claim timed.
+- [REVIEW] Decide conflict resolution for simultaneous claims. Recommendation: first completion wins with full refund to loser.
+- [REVIEW] Decide whether notable events should be fully anonymous or use astronaut names. Recommendation: astronaut names.
+
+## Multiplayer
+
+- [REVIEW] Decide when an occupied neighbor reveals an anonymous name. Recommendation: not in Season 0 unless it improves fun.
+- [REVIEW] Decide how players negotiate trade without exposing identity or requiring a chat product. Options include preset offers, Slack thread opt-in, or anonymous inbox.
+- [REVIEW] Decide whether faction names can be custom free text. Recommendation: generated names first or moderated custom names.
+- [REVIEW] Decide whether workplace culture can support conflict mechanics. Recommendation: validate cooperation first, then run a limited raid event.
+
+## Identity and privacy
+
+- [REVIEW] Decide whether optional real-name reveal should exist at all. Recommendation: defer until after Season 0.
+- [REVIEW] Decide whether anonymous names are stable across seasons. Recommendation: stable within a season, rotate between seasons.
+- [REVIEW] Auth source requires architecture discussion. Gameplay requirement: stable identity across workspaces.
+
+## Seasons and scoring
+
+- [REVIEW] Choose the first real playtest length. Recommendation: 3 workdays.
+- [REVIEW] Coder is distributed, so one daily report time may favor a region. Options are one global UTC report, one US-time report, or regional reports.
+- [REVIEW] Decide whether Season 0 has one winner or category winners. Recommendation: category winners.
+- [REVIEW] Decide whether players can opt into real-name recognition after the season. Recommendation: no for early seasons.
+
+## Interface
+
+- [REVIEW] Confirm whether the first client must support terminal-only users. Recommendation: web first, API designed so CLI can follow.
+
+## Architecture
+
+- [REVIEW] Choose stack after gameplay review. Since this is a Coder-adjacent project, Go plus Postgres plus a small web UI may fit well, but this should be discussed.
+- [REVIEW] Decide whether a workspace-hosted server is acceptable for Season 0 or if it should be deployed as a small service immediately.
+- [REVIEW] Repository shape depends on stack choice.
+
+## Extra ideas
+
+- [REVIEW] Avoid tying in-game production to real CPU, RAM, uptime, or workspace spend. It creates bad incentives.
+- [REVIEW] Events are fun but can distract from balance. Add only after the base loop works.
+
+## Balance
+
+- [REVIEW] Starting balances and rates require quick simulation before implementation is finalized.
+- [REVIEW] Decide if logistics upkeep is too much for Season 0. Recommendation: claim cost scaling first, logistics later if needed.
+- [REVIEW] Daily objectives may add engagement but also scope. Recommendation: skip for first implementation unless the loop feels empty.
+
+## Top decisions to make next
+
+1. Confirm working title.
+2. Confirm Season 0 scope: upgrades, scouting, claims, leaderboards only.
+3. Confirm web-first interface.
+4. Confirm anonymous names rotate by season.
+5. Confirm no combat, no trade, no factions in Season 0.
+6. Confirm whether credits are excluded from Season 0.
+7. Confirm 3-workday Season 0 test length.
+8. Confirm one global Slack report time.
