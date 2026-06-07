@@ -2,157 +2,105 @@
 
 ## Scope strategy
 
-Build the smallest version that proves employees will return to check production, buy upgrades, scout the map, and care about the leaderboard.
+Build the smallest API-first game that proves programmers want to build clients around it.
 
-Do not include trade, factions, or combat until the core loop is proven.
+The MVP is not multiplayer. It is not a polished web game. It is a central API plus a Coder template that makes players productive quickly.
 
-## Phase 0: Planning and repository setup
+## Phase 0: Planning and repo setup
 
 Deliverables:
 
-- Gameplay docs reviewed.
-- Working title selected.
-- Private repository created.
-- Architecture chosen.
-- Local development flow decided.
-- Initial issue list or milestone created.
+- API-first direction documented.
+- True MVP scope agreed.
+- Stack chosen.
+- Repo and local development flow ready.
+- First Coder template plan drafted.
 
 Exit criteria:
 
-- Season 0 scope is locked.
-- Auth and identity approach is known well enough to implement.
-- Deployment target for central game server is chosen.
+- We know the server stack.
+- We know the starter client language or languages.
+- We know how API tokens are issued for prototype players.
 
-## Phase 1: Single-player idle core
+## Phase 1: Central API skeleton
 
 Features:
 
-- Player account creation from stable identity.
-- Anonymous astronaut name assignment.
-- Starting planet assignment.
-- Resource balances.
-- Lazy idle production.
-- Basic upgrades: mine, solar, storage, lab.
+- Health endpoint.
+- Player token auth.
+- Player record creation.
+- OpenAPI spec.
+- Consistent JSON error format.
+- Basic request logging.
+
+Exit criteria:
+
+- A player can authenticate and call `GET /v1/status`.
+
+## Phase 2: Single-player game state
+
+Features:
+
+- Private outpost.
+- Ore and energy balances.
+- Lazy resource accrual.
+- Extractor, scanner, and storage levels.
 - Activity log.
-- Slim web UI.
-
-No shared map needed yet.
 
 Exit criteria:
 
-- A player can open the app, produce ore, buy upgrades, close the app, return later, and see resources accrued correctly.
+- A player can leave, return, and see deterministic resource updates.
 
-## Phase 2: Shared map and scouting
+## Phase 3: API actions
 
 Features:
 
-- 2D grid generation.
-- Starting planet placement.
-- Planet biomes and modifiers.
-- Player-specific discovery state.
-- Scout NORTH, EAST, SOUTH, WEST.
-- Timed scout actions.
-- Visible space summary.
+- Scan action.
+- Extract action.
+- Upgrade action.
+- Action IDs and statuses.
+- Idempotency keys for action creation.
+- Lazy action resolution on API reads.
 
 Exit criteria:
 
-- A player can scout adjacent tiles and see persistent discovered information.
+- A simple script can run status, start an action, poll completion, and upgrade.
 
-## Phase 3: Expansion
+## Phase 4: Player template and starter kit
 
 Features:
 
-- Claim uninhabited adjacent planet.
-- Timed claim action.
-- Multi-planet production aggregation.
-- Claim cost scaling.
-- Contested claim handling.
-- Owned planet list.
+- Coder template with API URL and token setup.
+- Starter CLI.
+- Example bot.
+- curl examples.
+- OpenAPI file.
+- README tutorial.
+- Ignored local config for secrets.
 
 Exit criteria:
 
-- Multiple players can compete to claim map territory without overwriting each other.
+- A new player can make their first API call in under five minutes.
+- A new player can modify a sample client in under one hour.
 
-## Phase 4: Leaderboards and Slack report
+## Phase 5: Single-player playtest
 
-Features:
+Playtest questions:
 
-- Daily scoring counters.
-- Leaderboard page.
-- Daily Slack report generator.
-- Notable event collection.
-- Season start and end metadata.
+- Is the API understandable?
+- Is the starter template useful without hiding the game?
+- Does the first automation loop feel fun?
+- What client do players naturally want to build next?
 
-Exit criteria:
+## Explicitly out of MVP
 
-- A daily anonymized report can be posted manually or automatically.
-
-## Phase 5: Season 0 playtest
-
-Season 0 rules:
-
-- Duration: 3 workdays
-- Resources: ore, energy, research
-- Actions: upgrade, scout, claim
-- No trade
-- No factions
-- No combat
-- Daily leaderboard
-- Final category awards
-
-Exit criteria:
-
-- At least a small group plays across multiple days.
-- We collect feedback on fun, pacing, UI clarity, and leaderboard motivation.
-- We identify the next system worth adding.
-
-## Version 2: Trade and rare resources
-
-Features:
-
-- Native rare resource per player.
-- Trade route proposals.
-- Structured trade terms.
-- Trade route slots.
-- Trade value scoring.
-- Trade route bonuses.
-- Better occupied planet scouting.
-
-## Version 2.5: Factions
-
-Features:
-
-- Faction Relay upgrade.
-- Create or join faction.
-- Anonymous faction names.
-- Faction leaderboard.
-- Shared buffs.
-- Optional shared bank.
-- Sensor sharing, possibly limited.
-
-## Version 3: Conflict
-
-Features:
-
-- Defense Grid.
-- Raid action.
-- Shield and cooldowns.
-- Exposed resource pool.
-- Salvage rewards.
-- Spy probe.
-
-Explicitly not first:
-
-- Planet capture.
-- Permanent destruction.
-- Unbounded repeated attacks.
-
-## Future event seasons
-
-Possible themed seasons:
-
-- The Mining Race: base Season 0
-- The Trade Constellation: trade focus
-- The Faction War Games: limited raids
-- The Wormhole Incident: map traversal event
-- The Relic Rush: special tiles and artifacts
+- Multiplayer.
+- Trading.
+- Economy or market systems.
+- Factions.
+- Combat.
+- Slack reports.
+- Public leaderboards.
+- Seasons.
+- Complex progression trees.
+- Polished first-party UI.

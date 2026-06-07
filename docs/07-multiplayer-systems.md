@@ -1,211 +1,51 @@
-# Multiplayer systems
+# Future multiplayer systems
 
-## Multiplayer philosophy
+## Status
 
-The game should feel shared before it becomes socially demanding. The first version should give players evidence that others exist without requiring direct coordination.
+Multiplayer is not MVP scope. This file is future direction only.
 
-Recommended order:
+The MVP should prove that a single programmer can build useful clients against the API. Multiplayer comes after the API, action model, resource model, and starter template are fun on their own.
 
-1. Shared anonymous leaderboards
-2. Hidden map with occupied planets
-3. Expansion race
-4. Trade routes
-5. Factions
-6. Raids and espionage
-7. Conquest, only if the game can support it safely
+## Future multiplayer order
 
-## Season 0 multiplayer
+Recommended order after MVP:
 
-Season 0 is primarily an individual experience with light shared-world context.
+1. Shared read-only world events.
+2. Anonymous leaderboard for API achievements.
+3. Shared sectors with occupied tile discovery.
+4. Structured trade or contracts.
+5. Factions.
+6. Conflict or raids, only if the culture and balance support it.
 
-Season 0 includes:
+## Future shared world
 
-- Individual idle production
-- Shared world map, as architecture groundwork
-- Anonymous players
-- Occupied planet discovery, if the shared map is ready
-- Expansion into empty planets, if the shared map is ready
-- Daily leaderboards
-- Notable world events
+The private sector model should evolve into a shared galaxy by changing visibility and ownership rules, not by replacing the whole data model.
 
-Season 0 excludes:
+Future occupied tile response:
 
-- Trading and economy systems beyond individual production
-- Factions
-- Combat
-- Resource transfers
-- Direct messaging
-- Planet capture
-
-## Scouting
-
-Scouting reveals nearby map tiles.
-
-At first, occupied planets show minimal information:
-
-```text
-Planet EAST is occupied.
-Owner: Unknown Astronaut
-Trade status: Not available this season
-Conflict status: Not available this season
+```json
+{
+  "tile_id": "tile_12_8",
+  "state": "occupied",
+  "owner": "unknown_astronaut",
+  "public_name": null
+}
 ```
 
-Future scanner levels can reveal:
+## Future trade
 
-- Anonymous astronaut name
-- Faction name
-- Biome
-- Rare resource category
-- Rough production band
-- Rough defense band
+Trade is deferred. If added, it should be structured and API-friendly.
 
-[REVIEW] Decide when an occupied neighbor reveals an anonymous name. Recommendation: not in Season 0 unless it improves fun.
-
-## Expansion
-
-Players can claim uninhabited adjacent planets.
-
-Rules:
-
-- Target must be scouted.
-- Target must be uninhabited.
-- Target must be adjacent to owned territory.
-- Claim has a resource cost and timer.
-- Claim cost increases with owned planet count.
-
-No player can claim another player's owned planet in MVP.
-
-## Trade, Version 2
-
-Trade should be the first true social mechanic.
-
-Goals:
-
-- Encourage discovery and cooperation.
-- Make rare starting resources matter.
-- Create anonymous diplomacy without requiring chat.
-- Add strategic choices that are not purely combat.
-
-Example route:
+Possible future flow:
 
 ```text
-Trade Route
-
-Astronaut Finch-12 sends:
-- 500 ore/hour
-
-Astronaut Vela-3 sends:
-- 50 Bio-Gel/hour
-
-Route bonus:
-- Both players get +3% research while route remains active.
+POST /v1/trade/offers
+GET  /v1/trade/offers
+POST /v1/trade/offers/{id}/accept
 ```
 
-Recommended trade model:
+Do not design MVP resources around future trade.
 
-- Trade requires both players to accept.
-- Trade terms are structured, not free-text.
-- Trade routes have limited slots.
-- Routes can be cancelled with a cooldown.
-- Routes generate daily trade value stats.
+## Future conflict
 
-Decision: Defer trade negotiation entirely. The MVP focuses on game architecture and the individual player experience.
-
-## Native rare resources, Version 2
-
-Each player's starting planet can have one native rare resource. Advanced upgrades require resources from other planets, creating trade pressure.
-
-Examples:
-
-- Bio-Gel improves lab output.
-- Solar Glass improves energy production.
-- Cryo Crystals improve storage.
-- Titanium Foam improves claim speed.
-- Neutrino Ice improves scanner range.
-
-## Factions, Version 2 or 3
-
-Factions are the big social unlock.
-
-Possible unlock:
-
-```text
-Create faction
-Requires: Faction Relay
-Cost: 25,000 ore, 5,000 research
-Max members: 5 initially
-```
-
-Faction mechanics:
-
-- Anonymous faction name
-- Shared leaderboard category
-- Shared resource bank, future
-- Faction-wide buffs
-- Sensor sharing
-- Trade route discounts
-- Shared defense, future
-
-Example faction bonuses:
-
-| Faction style | Bonus |
-| --- | --- |
-| Engineering Guild | +5% construction speed |
-| Mining Collective | +5% ore production |
-| Research Pact | +5% research output |
-| Defense League | +10% shield strength, future |
-| Trade Union | +10% route efficiency |
-
-[REVIEW] Decide whether faction names can be custom free text. Recommendation: allow custom names with moderation or pick from generated names first.
-
-## Conflict, Version 3
-
-Do not start with war. Conflict creates balance, safety, and morale problems before the base game is proven.
-
-If added, start with raids rather than conquest.
-
-Raid concept:
-
-```text
-Raid target: Unknown Neighbor
-Attack commitment: 5,000 ore, 1,000 energy
-Resolution: 6 hours
-Outcome: Attacker wins
-Reward: 1,200 ore, 300 credits
-Target loses: exposed unshielded resources only
-```
-
-Combat should follow these principles:
-
-- No permanent destruction in early conflict versions.
-- No planet capture at first.
-- Defenders keep core production.
-- Losses come from exposed resources, not total economy.
-- Defender receives temporary raid shield after being attacked.
-- Repeated attacks on the same player are rate-limited.
-
-## Basic raid formula, future
-
-```text
-attack_power = committed_resources * attack_multiplier
-
-defense_power = shield_investment + defense_buildings + committed_reserves
-
-if attack_power > defense_power:
-  attacker gains 10% to 25% of exposed resources
-  defender receives raid shield
-else:
-  attacker loses committed resources
-  defender gains small salvage bonus
-```
-
-[REVIEW] Decide whether workplace culture can support conflict mechanics. Recommendation: validate cooperative systems first, then run a limited raid event in a short season.
-
-## Social safety rules
-
-- Public game surfaces use anonymous names.
-- Real identity is only for auth, abuse prevention, and admin support.
-- No custom player names in MVP.
-- No free-text messaging in MVP.
-- Trade and faction names need moderation if free text is allowed.
-- Conflict needs cooldowns and shields before launch.
+Conflict is deferred even further. If added, start with low-punishment raids and strong cooldowns. Do not allow permanent deletion or planet capture until the game has proven trust and balance.

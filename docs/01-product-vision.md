@@ -2,107 +2,101 @@
 
 ## One-line pitch
 
-Codernauts is an asynchronous multiplayer idle strategy game where each Coder employee provisions into a hidden planet, grows an outpost, scouts a shared galaxy, expands, and competes on anonymous daily leaderboards.
+Codernauts is an API-first space automation game for programmers. Players provision a Coder workspace, receive starter tooling, and build their own clients and bots against a central game server API.
 
 ## Player fantasy
 
-You are an astronaut provisioned into a random planet inside a corporate galaxy. Your workspace is your outpost. The game feels like infrastructure turned into a tiny sci-fi economy.
+You are a programmer-astronaut dropped onto a small outpost. The game is not about clicking the best button in our UI. The game is about reading the API, writing code, and building tools that make your outpost smarter.
 
 Example first-run copy:
 
 ```text
-Provisioning colony...
-Applying terraform...
-Workspace initialized.
-Planet assigned: Vesta-41.
-Agent online.
-Mining process started.
+Provisioning Codernauts starter workspace...
+API token installed.
+Starter client generated.
+Outpost assigned: Vesta-41.
 
-Welcome, Astronaut Finch-12.
+Try:
+  codernauts status
+  codernauts scan north
+  codernauts run examples/basic-bot.ts
 ```
 
 ## Design pillars
 
-1. **Async by default**
-   - No one needs to be online at the same time.
-   - Idle production continues while players are away.
-   - Long actions resolve on timers.
+1. **API first**
+   - The central game server exposes the primary game surface.
+   - Every meaningful action is available through documented endpoints.
+   - The server owns authoritative state.
 
-2. **Slim interface**
-   - The game should be playable in a Coder app panel or terminal.
-   - No rich graphics are required for Season 0.
-   - Text, numbers, buttons, and small map summaries carry the experience.
+2. **Build your own client**
+   - Players can use the starter CLI, but the real fun is editing it or replacing it.
+   - A player might build a terminal dashboard, web UI, cron bot, Slack bot, or agent.
+   - The template should make the first API call easy and the second tool idea obvious.
 
-3. **Mystery without workplace weirdness**
-   - Players are anonymous to each other by default.
-   - Discovery reveals nearby game state, not real-world identity.
-   - Optional reveal can be added later for trusted alliances.
+3. **Single-player first, multiplayer-ready later**
+   - MVP players get private outpost state and a private sector.
+   - Data models should include player IDs and world IDs so shared state can arrive later.
+   - No MVP feature should require simultaneous players.
 
-4. **Corporate meta-game**
-   - Daily Slack reports make the game feel alive.
-   - Names, upgrades, and events use Coder and developer infrastructure flavor.
-   - Short seasons reduce pressure and make balance mistakes recoverable.
+4. **Small programmable loop**
+   - Read state.
+   - Decide in code.
+   - Submit an action.
+   - Poll or wait.
+   - Improve the tool.
 
-5. **Low punishment**
-   - The first playable version should not include destructive conflict.
-   - Future conflict should sting but not erase progress.
-   - Catch-up mechanics should prevent hopeless snowballs.
+5. **Coder flavor, lightly**
+   - Use workspace and developer infrastructure language for charm.
+   - Do not make every mechanic a Coder product metaphor.
+   - The game should still make sense to a programmer who only knows APIs.
 
 ## Audience
 
 Primary audience:
 
-- Coder employees who can create a workspace from an internal template.
-- People who enjoy checking a small game during the workday.
-- Both terminal-friendly and non-terminal players.
+- Programmers who enjoy APIs, automation, and coding games.
+- Coder employees or users who can launch a prepared template.
+- Players who want to vibe-code their own client rather than use a finished UI.
 
 Secondary audience:
 
-- People who mainly follow the Slack leaderboard and jump in when it looks fun.
-- People who join later in a season and need a viable path to relevance.
+- People who want to inspect or fork other clients later.
+- People who will join future multiplayer seasons after the single-player loop works.
 
-## Non-goals for early versions
+## Non-goals for MVP
 
-- No full graphical space map in Season 0.
-- No real-time multiplayer.
-- No permanent death or irreversible loss.
-- No planet capture from other players in MVP.
-- No complex combat in MVP.
-- No player-to-player chat system in MVP.
-- No requirement that every workspace stores game state locally.
+- No polished first-party game UI.
+- No multiplayer interactions.
+- No shared map competition.
+- No trading, market, or economy systems beyond simple resources.
+- No factions.
+- No combat.
+- No Slack leaderboard.
+- No deep upgrade tree.
+- No dependency on real workspace resource usage.
 
-## Working title options
+## Working name
 
-Selected working title:
+Codernauts is the working name for the repository, docs, template, and future bot identity.
 
-1. **Codernauts**
+## Coder flavor guidelines
 
-Former alternatives:
+Use terms like workspace, template, agent, and outpost when they make copy better. Avoid forcing product metaphors into every mechanic.
 
-- Coder Colonies
-- Planetfall
-- Terraform Galaxy
-- Idle Orbit
-- The Grid
-- Provisioned Worlds
-- Astronauts of Coder
+Examples that fit:
 
-Decision: Codernauts is the working name for the repository, docs, template, and Slack bot identity.
-
-## Coder flavor vocabulary
-
-| Game concept | Coder-flavored term |
+| Game concept | Light Coder flavor |
 | --- | --- |
-| Home base | Workspace Outpost |
-| Starting planet | Provisioned World |
-| Expansion | Terraforming |
-| Mining drones | Agents |
-| Trade route | Port Route |
-| Storage | Persistent Volume |
-| Scanner | Port Forwarding Array |
-| Research network | AI Gateway |
-| Rare artifact | Secret |
-| Colonization ship | Dev Container |
-| Faction | Organization |
+| Player starter environment | Coder workspace |
+| Onboarding package | Template |
+| Mining helper | Agent |
+| Base | Outpost |
+| Generated starter code | Client kit |
 
-Decision: Use a light sprinkle of Coder terms for flavor, but do not make every mechanic depend on Coder product terminology. The game should stand on its own even if some copy uses workspace and developer infrastructure flavor.
+Examples to avoid in MVP:
+
+- Real CPU as production.
+- Real uptime as score.
+- Real workspace size as an advantage.
+- Org chart data as game placement.

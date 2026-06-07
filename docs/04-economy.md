@@ -1,156 +1,59 @@
-# Economy
+# Resource model
 
-## Economy goals
+## MVP framing
 
-The economy should be:
+This is not an economy in the MVP. There is no market, trading, credits, rare resources, or player-to-player exchange. The MVP only needs a small resource model that makes API automation worthwhile.
 
-- Easy to understand in the first minute.
-- Deep enough to support upgrade choices.
-- Small enough to balance for Season 0.
-- Built around idle accumulation and meaningful sinks.
+## MVP resources
 
-## Season 0 resources
-
-Recommended MVP resources:
-
-| Resource | Role | Production source | Main sinks |
+| Resource | Role | Source | Sink |
 | --- | --- | --- | --- |
-| Ore | Basic construction and expansion | Mines and planets | Buildings, upgrades, claims |
-| Energy | Gating resource for scanning and advanced upgrades | Solar arrays and biome modifiers | Scouting, labs, claims |
-| Research | Unlocks new mechanics and upgrade tiers | Labs | Scanner, automation, advanced production |
-| Credits | Future trade currency | Future market or trade systems | Trade routes, faction fees, future |
+| Ore | Primary spendable resource | Passive extractor rate, extract actions | Extractor, scanner, storage upgrades |
+| Energy | Action capacity | Regenerates over time | Scan and extract actions |
 
-Decision: Exclude credits from the MVP. Season 0 focuses on the individual production loop with ore, energy, and research only.
+Research and credits are deferred.
 
-## Later resources
+## Lazy production
 
-Potential Version 2 and Version 3 resources:
-
-| Resource | Role |
-| --- | --- |
-| Water | Bio upgrades, life support, trade scarcity |
-| Carbon | Manufacturing and organic tech |
-| Silicon | Scanner and automation upgrades |
-| Fuel | Long-range scouting and raids |
-| Alloy | Advanced construction |
-| Data | Espionage and research systems |
-| Quantum Cores | Late-game rare upgrades |
-| Relics | Seasonal event currency |
-
-## Rare resources
-
-Rare resources create trade motivation. They should not be required in Season 0.
-
-Examples:
-
-- Cryo Crystals
-- Dark Matter Dust
-- Bio-Gel
-- Titanium Foam
-- Solar Glass
-- Neutrino Ice
-- Compiler Pearls
-- Terraform Seeds
-
-Recommended Version 2 rule:
-
-- Each home planet has one native rare resource.
-- Advanced upgrades require two or three different rare resources.
-- Players can gain access through trade or faction membership.
-
-Decision: Defer rare resources, trading, and related visibility rules until after the MVP. The MVP should not include economy or trading systems beyond the individual production loop.
-
-## Idle production model
-
-Production should be calculated lazily instead of running one job per player.
-
-Conceptual formula:
+Production should be calculated lazily.
 
 ```text
-current_balance = stored_balance + production_rate * elapsed_time
+current_ore = stored_ore + ore_rate * elapsed_time
+current_energy = min(max_energy, stored_energy + energy_rate * elapsed_time)
 ```
 
-When resources are read or modified:
+The server updates balances when the player reads or changes state.
 
-1. Load stored balance and last updated timestamp.
-2. Calculate elapsed time.
-3. Calculate production generated during elapsed time.
-4. Apply storage caps.
-5. Persist the new balance and timestamp.
-6. Execute the player action.
+## Storage
 
-This keeps the game simple and scalable.
+Storage exists to make upgrades meaningful, not to punish players.
 
-## Storage caps
+MVP recommendation:
 
-Storage creates a reason to check in but should not punish casual players too hard.
+- Ore has a generous cap.
+- Energy has a cap because it gates actions.
+- Offline accrual can cap after 24 hours if needed.
 
-Recommended Season 0 behavior:
-
-- Ore has a storage cap.
-- Energy has a storage cap.
-- Research may have a high or no cap.
-- Players start with enough storage to be away overnight without fully capping too early.
-
-[REVIEW] Decide cap strictness. Recommendation: use generous caps in Season 0 so people are not punished for doing actual work.
-
-## Production rates
-
-Season 0 starting point:
+## Initial values for prototype
 
 ```text
-Ore:      +1.0 per second
-Energy:   +0.1 per second, capped
-Research: +0.0 per second until Lab I
+Starting ore: 100
+Starting energy: 50
+Max ore: 1,000
+Max energy: 100
+Ore rate: +1.0/sec
+Energy rate: +0.05/sec
 ```
 
-After early upgrades:
+These are placeholders. Tune them with a quick simulation before a playtest.
 
-```text
-Ore:      +2.0 to +5.0 per second
-Energy:   +0.3 to +1.0 per second
-Research: +0.05 to +0.3 per second
-```
+## Deferred economy concepts
 
-[REVIEW] These numbers should be playtested quickly. The target is that a player can buy something useful after the first few minutes, then after a few hours, then overnight.
+- Credits.
+- Rare resources.
+- Trade routes.
+- Markets.
+- Faction banks.
+- Resource transfers.
 
-## Resource sinks
-
-Season 0 sinks:
-
-- Mine upgrades
-- Solar upgrades
-- Storage upgrades
-- Lab upgrades
-- Scanner research
-- Scout actions
-- Claim actions
-
-Future sinks:
-
-- Trade route setup costs
-- Faction creation and upkeep
-- Defense grid investment
-- Raid commitments
-- Spy probes
-- Wormhole travel
-- Seasonal projects
-
-## Scoring counters versus balances
-
-Leaderboards should use cumulative counters, not just current balances.
-
-Track counters such as:
-
-- Total ore produced this cycle
-- Total energy produced this cycle
-- Total research produced this cycle
-- Total ore spent this cycle
-- Planets claimed this cycle
-- Scout actions completed this cycle
-
-This prevents players from needing to hoard resources to rank well.
-
-## Economy principle
-
-Spend should usually feel good. If spending resources drops leaderboard position, players may stop interacting. Prefer scoring production and achievements over current inventory.
+These should not influence MVP architecture except that resource names should be extensible.

@@ -1,177 +1,76 @@
 # Upgrades and progression
 
-## Progression goals
+## MVP progression goal
 
-Upgrades should be legible, tempting, and frequent enough to create short check-ins.
+Progression should be small enough to understand from JSON and useful enough to motivate client automation.
 
-A player should understand:
+The player should think:
 
-- What the upgrade costs.
-- What it changes immediately.
-- What it unlocks later.
-- Why they might choose it over another option.
+```text
+If my script upgrades the extractor first, ore grows faster.
+If it upgrades the scanner first, I can discover better sites.
+```
 
-## Season 0 upgrade families
+## MVP upgrade families
 
-| Family | Purpose | Example upgrades |
+| Upgrade | Effect | Why it exists |
 | --- | --- | --- |
-| Mining | Increase ore production | Mine I, Mine II, Autonomous Mine |
-| Energy | Increase energy production and cap | Solar Array, Fusion Cell, Orbital Collector |
-| Storage | Increase resource caps | Storage Depot, Warehouse, Planetary Vault |
-| Research | Generate research and unlock systems | Lab, Research Network, AI Governor |
-| Scanning | Reveal nearby planets | Scanner I, Deep Scanner, Sector Radar |
-| Expansion | Claim more planets | Colonization Shuttle, Terraform Rig |
+| Extractor | Increases ore rate | Core idle progression |
+| Scanner | Unlocks scanning or better scan results | Creates API exploration |
+| Storage | Increases ore and energy caps | Supports longer offline windows |
 
-## Example upgrade screen
+Do not add labs, factions, defenses, trade uplinks, or deep tech trees in MVP.
 
-```text
-Available Upgrades
+## Suggested capped levels
 
-[1] Mine II
-Cost: 1,000 ore
-Effect: +1.0 ore/sec
+| Upgrade | Levels | Example effects |
+| --- | --- | --- |
+| Extractor | 1 to 5 | +0.5 ore/sec per level |
+| Scanner | 0 to 2 | Level 1 scans adjacent, Level 2 reveals richer hints |
+| Storage | 1 to 3 | Higher ore and energy caps |
 
-[2] Solar Array
-Cost: 600 ore
-Effect: +0.3 energy/sec, +500 energy storage
-
-[3] Scanner I
-Cost: 300 ore, 50 energy
-Effect: Unlock adjacent scouting
-
-[4] Research Lab
-Cost: 2,000 ore, 500 energy
-Effect: +0.05 research/sec, unlocks research upgrades
-```
-
-## Upgrade tiers
-
-### Tier 0: Landing
-
-Available immediately:
-
-- Mine I
-- Solar Panel I
-- Storage Depot I
-
-Goal:
-
-- Give the player something to buy within minutes.
-
-### Tier 1: Stable outpost
-
-Unlocked by early production:
-
-- Mine II
-- Solar Array I
-- Storage Depot II
-- Lab I
-
-Goal:
-
-- Introduce energy and research without overwhelming the player.
-
-### Tier 2: Exploration
-
-Unlocked with Lab I and enough energy:
-
-- Scanner I
-- Scout action
-- Colonization Shuttle I
-
-Goal:
-
-- Reveal the hidden map and connect idle production to world expansion.
-
-### Tier 3: Expansion
-
-Unlocked after first successful scout:
-
-- Claim action
-- Logistics I
-- Mine automation
-- Planet summary view
-
-Goal:
-
-- Let the player add a second planet and feel the world open up.
-
-### Tier 4: Multiplayer preview
-
-Recommended for Season 0 only as lightweight signals:
-
-- Occupied tile discovery
-- Anonymous neighbor display
-- Leaderboard rival tags
-
-Goal:
-
-- Hint at future trade and conflict without implementing them.
-
-## Strategic upgrades for later versions
-
-| Upgrade | Unlocks |
-| --- | --- |
-| Trade Uplink | Trade routes |
-| Faction Relay | Faction creation and invites |
-| Defense Grid | Raid protection |
-| Spy Probe | Espionage and stronger scouting |
-| Orbital Cannon | Future conflict actions |
-| Terraforming Rig | Advanced planet claiming |
-| Wormhole Stabilizer | Long-range map movement |
-
-## Cost curve
-
-Costs should grow exponentially but not absurdly.
-
-Example pattern:
+## API shape
 
 ```text
-cost(level) = base_cost * growth_factor ^ (level - 1)
+GET  /v1/upgrades
+POST /v1/upgrades
 ```
 
-Suggested growth factors:
+Example request:
 
-- Mine: 1.65
-- Energy: 1.55
-- Storage: 1.50
-- Lab: 1.75
-- Scanner: fixed milestone costs
-- Expansion: base claim cost plus empire-size multiplier
+```json
+{
+  "upgrade_key": "extractor"
+}
+```
 
-[REVIEW] Confirm whether upgrades should have infinite levels or capped tiers. Recommendation: cap tiers for Season 0 so balance and UI stay simple.
+Example response:
 
-## Unlock dependencies
+```json
+{
+  "upgrade_key": "extractor",
+  "level": 2,
+  "effect": {
+    "ore_rate_delta": 0.5
+  }
+}
+```
 
-Recommended Season 0 dependencies:
+## Unlocks
+
+Keep unlocks minimal.
 
 ```text
-Lab I requires Solar Array I
-Scanner I requires Lab I
-Scout action requires Scanner I
-Colonization Shuttle I requires first scouted uninhabited planet
-Claim action requires Colonization Shuttle I
+Scanner I unlocks scan actions.
+Extractor II makes automation visibly better.
+Storage II lets a casual player stay away longer.
 ```
 
-## Anti-snowball controls
+## Deferred progression
 
-Use soft brakes, not hard punishment.
-
-Potential controls:
-
-- Increasing claim cost per owned planet.
-- Empire upkeep after a planet threshold.
-- Diminishing returns on repeated same-family upgrades.
-- Daily objective bonuses for lower-ranked players.
-- Newbie shield for first 24 hours, relevant when conflict exists.
-- Raid protection after being attacked, future.
-
-Recommended Season 0 controls:
-
-- Claim cost increases by owned planet count.
-- Planet production has a logistics multiplier that can be improved through upgrades.
-- Leaderboard categories include more than total ore produced.
-
-## Progression principle
-
-The player should rarely be choosing between a good action and no action. They should usually be choosing between two good actions with different timelines.
+- Research trees.
+- Rare-resource recipes.
+- Ship classes.
+- Faction upgrades.
+- Combat upgrades.
+- Seasonal prestige.

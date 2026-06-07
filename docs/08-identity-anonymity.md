@@ -1,128 +1,57 @@
-# Identity and anonymity
+# Identity and API tokens
 
-## Identity goals
+## MVP identity goals
 
-The game should let employees keep progress across workspace deletion while preserving public anonymity.
+The MVP needs stable player identity and safe API authentication. Anonymity is mostly a future multiplayer concern.
 
 Requirements:
 
-- A player's game account should attach to their Coder identity or email.
-- Public game surfaces should use anonymous astronaut names.
-- Admins should be able to map anonymous players to real identities for support and abuse prevention.
-- Players should not lose progress when deleting and recreating the game workspace.
+- A player can delete and recreate the Coder workspace without losing server state.
+- The template can call the API without asking the player to manually paste secrets into code.
+- Starter tools do not leak tokens to logs or commits.
+- The server can revoke or rotate tokens.
 
-## Identity layers
+## MVP auth model
 
-### Layer 1: Public leaderboard identity
+Recommended starting model:
 
-Displayed in Slack and global pages:
+1. Server creates a player record.
+2. Server issues an API token for that player.
+3. The Coder template stores the token in an environment variable or local ignored config file.
+4. Starter clients read the token and call the API.
 
-```text
-1. Astronaut Cobalt-7      1,204,000 ore
-2. Astronaut Vela-3          947,000 ore
-3. Astronaut Ash-12          881,500 ore
-```
-
-No real names, emails, or team names.
-
-### Layer 2: Local discovered identity
-
-Displayed after discovery or interaction:
+Example environment:
 
 ```text
-Neighbor EAST: Unknown Astronaut
-After stronger scan: Astronaut Vela-3
-After accepted trade: Astronaut Vela-3
-After optional reveal: Real identity, only if both players opt in
+CODERNAUTS_API_URL=https://example.internal
+CODERNAUTS_API_TOKEN=cnp_...
 ```
 
-[REVIEW] Decide whether optional real-name reveal should exist at all. Recommendation: defer until after Season 0.
+## Future Coder identity integration
 
-### Layer 3: Admin/internal identity
+A later version can bind player records to Coder user ID or verified email so workspaces can be recreated safely without manual token transfer.
 
-Stored server-side:
+Gameplay requirement:
 
-- Coder user ID
-- Coder username or email
-- Anonymous astronaut name
-- Season participation records
-- Audit events for sensitive actions
+```text
+same employee + new workspace = same active player record
+```
 
-This mapping should not appear in normal game UI.
+## Public identity
 
-## Anonymous name generation
+MVP has no public leaderboard, so anonymous names are not required for gameplay. Still, the server can assign a display name early so future multiplayer has a path.
 
-Recommended format:
+Example:
 
 ```text
 Astronaut Finch-12
-Astronaut Cobalt-7
-Astronaut Vela-3
-Astronaut Umber-9
 ```
 
-Properties:
+## Token safety checklist
 
-- Human-readable
-- Short enough for Slack
-- Not chosen by players in MVP
-- Unique per season or persistent across seasons, depending on decision
-
-[REVIEW] Decide whether anonymous names are stable across seasons. Recommendation: stable within a season, rotate between seasons to preserve mystery.
-
-## Auth source
-
-Likely identity source:
-
-- Coder workspace environment provides user context.
-- Game client authenticates to central server with a token or Coder-provided identity.
-- Server resolves identity to a stable Coder user ID or verified email.
-
-[REVIEW] This requires architecture discussion. The key gameplay requirement is stable identity across workspaces.
-
-## Privacy boundaries
-
-Do:
-
-- Use anonymous names in leaderboards.
-- Store real identity only where needed.
-- Make admin access explicit and auditable.
-- Avoid using org chart, team, or manager data in gameplay.
-
-Do not:
-
-- Show real names by default.
-- Leak email in client payloads.
-- Put real identity in Slack reports.
-- Let players choose impersonating names.
-- Use workplace hierarchy as a gameplay mechanic.
-
-## Abuse and support needs
-
-Admins may need to answer:
-
-- Who owns a problematic custom faction name?
-- Who is exploiting a bug?
-- Who needs their account reset?
-- Who lost progress due to auth mismatch?
-
-Admin mapping is justified for these cases. It should not become part of normal gameplay.
-
-## Account continuity
-
-If a player deletes and recreates their workspace:
-
-1. They open the game app again.
-2. Server identifies the same Coder user.
-3. Server returns the same active-season player record.
-4. Local client has no authoritative game state.
-
-This implies all important state belongs on the central game server.
-
-## Identity review checklist
-
-- [ ] Does every public display use anonymous identity?
-- [ ] Can a user recover progress from a new workspace?
-- [ ] Can an admin support a user without exposing mappings broadly?
-- [ ] Are custom names disabled or moderated?
-- [ ] Is Slack output safe to post in company channels?
+- [ ] `.env` files are ignored by git.
+- [ ] Starter clients read tokens from environment or local config.
+- [ ] Logs redact tokens.
+- [ ] API errors never echo secrets.
+- [ ] Docs warn players not to commit tokens.
+- [ ] Token rotation exists before broader playtests.

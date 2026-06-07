@@ -3,113 +3,71 @@
 ## Core loop summary
 
 ```text
-Produce resources -> buy upgrades -> unlock systems -> scout map -> expand -> score on leaderboard
+Inspect API state -> modify client code -> submit action -> observe result -> automate repeat behavior -> unlock a small new capability
 ```
 
-The player should always have one obvious next thing to do and one tempting longer-term goal.
+The loop should make players think, "I can write a better tool for this." That is more important than having a polished UI.
 
-## Season 0 loop
+## True MVP loop
 
-Season 0 should focus on the smallest coherent loop:
+1. Player launches the Codernauts template.
+2. Template provides API URL, API token, starter CLI, examples, and docs.
+3. Player runs `codernauts status` or calls `GET /v1/status`.
+4. Server returns outpost state, resources, upgrades, and active actions.
+5. Player starts a simple action, such as scan or extract.
+6. Player polls `GET /v1/actions` or reruns status.
+7. Player spends ore on one upgrade.
+8. Player edits the starter client to automate the same loop.
 
-1. Player enters the game and receives a planet.
-2. Planet idly produces ore.
-3. Player spends ore on mine and energy upgrades.
-4. Player unlocks research.
-5. Player researches scanning.
-6. Player scouts adjacent planets.
-7. Player claims empty adjacent planets.
-8. More planets increase production.
-9. Daily leaderboard posts results.
+## First five minutes
 
-## Session cadence
-
-Ideal interaction length:
-
-- Morning check-in: 30 to 90 seconds
-- Midday action resolution: 30 to 90 seconds
-- End-of-day leaderboard reaction: passive Slack visibility
-
-Example morning session:
+The first five minutes should prove the product direction.
 
 ```text
-You produced 18,400 ore while away.
-Mine III is complete.
-Scanner I is available.
+$ codernauts status
+Outpost: Vesta-41
+Ore: 120 / 500
+Ore rate: +1.0/sec
+Scanner: Level 0
+Active actions: none
 
-Recommended action:
-- Build Solar Array II to support scanner energy cost.
+Suggested next calls:
+  codernauts upgrade extractor
+  codernauts scan north
 ```
 
-Example midday session:
+Then the player opens the starter client and sees readable code:
 
 ```text
-Scout EAST completed.
-Result: Uninhabited desert planet. Copper-rich. Low hazard.
-
-Available action:
-- Claim EAST, 2 hours
+examples/basic-bot.ts
+src/client.ts
+openapi/codernauts.yaml
 ```
 
-## Player day example
+## First hour
 
-At 9:30 AM:
+A successful first hour looks like this:
 
-```text
-You log in.
-Your planet mined 18,400 ore overnight.
-You buy Mine IV.
-You start researching Scanner II.
-You scout EAST.
-```
+- Player understands the API token and base URL.
+- Player calls status from CLI or curl.
+- Player starts a scan.
+- Player upgrades the extractor.
+- Player edits one file in the starter client.
+- Player has an idea for a custom tool.
 
-At 12:00 PM:
+## What should be fun before multiplayer exists
 
-```text
-Scout complete.
-EAST is an uninhabited copper-rich planet.
-You begin claiming it.
-```
-
-At 3:00 PM:
-
-```text
-Claim complete.
-Your territory now has 2 planets.
-Your ore production increases by 42%.
-```
-
-At 5:00 PM:
-
-```text
-Slack leaderboard posts.
-You are #8 in ore produced and #3 in planets claimed.
-```
-
-## What should be fun before multiplayer depth exists
-
-The game must be fun enough before trade, factions, or raids. Season 0 fun comes from:
-
-- Watching production rates rise.
-- Picking upgrades with visible effects.
-- Revealing hidden planets.
-- Racing anonymous coworkers on leaderboards.
-- Seeing notable world events in Slack.
-
-## Retention hooks
-
-- Daily Slack report.
-- Timed actions that complete during the workday.
-- A visible next unlock.
-- Short seasons that reset opportunity.
-- Anonymous rivalries.
-- Notable events generated from real player activity.
+- Seeing game state as clean JSON.
+- Writing a script that makes a good decision.
+- Watching a bot loop improve the outpost.
+- Discovering a new tile or signal through the API.
+- Replacing the starter CLI with something personal.
 
 ## Failure cases to avoid
 
-- Player logs in and has no useful action to take.
-- Early player lead becomes impossible to catch.
-- Optimal strategy is too obvious after five minutes.
-- Player gets attacked before understanding the game.
-- Public leaderboard exposes real employee identity.
-- Game requires constant attention to compete.
+- The starter template hides the API behind too much framework code.
+- The API is undocumented or inconsistent.
+- Actions require manual UI interaction.
+- The optimal bot is trivial after one minute.
+- The player has no reason to edit code.
+- Rate limits or timers make experimentation feel broken.

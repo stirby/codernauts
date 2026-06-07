@@ -1,137 +1,114 @@
-# Architecture notes for later
+# API server architecture
 
-This file captures architecture assumptions without locking decisions. The next conversation should turn this into an implementation architecture after gameplay scope is approved.
+## Core architecture
 
-## Core architecture assumption
-
-The game should have a central authoritative server. Player workspaces should run clients only.
-
-Reason:
-
-- Players should not lose progress when deleting a workspace.
-- Shared map state needs one source of truth.
-- Leaderboards and Slack reports need global state.
-- Local workspace state would make cheating and synchronization harder.
-
-## Likely components
+The central authoritative server is required for MVP. Player workspaces run clients and tools only.
 
 ```text
-Player Coder workspace
-  -> slim web client or local client app
-  -> central game API
-  -> central database
-  -> scheduled worker for action resolution and Slack reports
+Coder template workspace
+  -> starter CLI, examples, custom player code
+  -> Codernauts HTTP API
+  -> central game server
+  -> database
 ```
 
-## State ownership
+## Server responsibilities
 
-Central server owns:
+- Authenticate API tokens.
+- Own player state.
+- Compute lazy resource accrual.
+- Create and resolve actions.
+- Store world and sector state.
+- Serve OpenAPI documentation.
+- Return consistent JSON errors.
+- Protect against unsafe polling or duplicate actions.
 
-- Users and identity mapping
-- Anonymous player names
-- Seasons
-- Map and planets
-- Resource balances and production timestamps
-- Upgrades
-- Actions and timers
-- Discovery state
-- Leaderboard counters
-- Activity logs
-- Slack report data
+## Workspace responsibilities
 
-Workspace client owns:
+- Store local API config safely.
+- Provide starter client code.
+- Provide examples and docs.
+- Let players build their own tools.
+- Store no authoritative game state.
 
-- No authoritative game state
-- Local config only, if needed
-- UI assets or CLI binary
+## API style
 
-## Stack options
+Recommendation:
 
-Backend options:
+- REST/JSON for MVP.
+- OpenAPI spec checked into the repo.
+- `/v1` path prefix.
+- Bearer token auth.
+- Idempotency key support for action creation.
+- UTC ISO-8601 timestamps.
 
-- Go HTTP server
-- Python FastAPI
-- Node or TypeScript server
-
-Frontend options:
-
-- Server-rendered HTML with HTMX
-- Minimal React
-- Svelte
-- Plain HTML plus small JavaScript
-
-Database options:
-
-- Postgres for central state
-- SQLite only for a very early local prototype, not for multiplayer
-
-Scheduler options:
-
-- Server-side cron loop
-- Separate worker process
-- Database-backed action resolver
-- External scheduler later if needed
-
-[REVIEW] Choose stack after gameplay review. Since this is a Coder-adjacent project, Go plus Postgres plus a small web UI may fit well, but this should be discussed.
-
-## Auth requirement
-
-The server needs a stable identity from Coder, likely user ID or verified email. The exact mechanism depends on Coder app/template capabilities.
-
-Gameplay requirement:
+## Data model sketch
 
 ```text
-same employee + new workspace = same active-season player
+Player
+- id
+- display_name
+- created_at
+
+ApiToken
+- id
+- player_id
+- token_hash
+- created_at
+- revoked_at
+
+Outpost
+- id
+- player_id
+- sector_id
+- ore_balance
+- energy_balance
+- last_resource_update_at
+
+Upgrade
+- id
+- player_id
+- key
+- level
+
+SectorTile
+- id
+- sector_id
+- x
+- y
+- state
+- biome
+- discovered_at
+
+Action
+- id
+- player_id
+- type
+- status
+- payload
+- result
+- idempotency_key
+- created_at
+- resolves_at
+- completed_at
+
+EventLog
+- id
+- player_id
+- type
+- message
+- payload
+- created_at
 ```
 
-## Lazy production requirement
+## Timed action strategy
 
-Production should be computed lazily on resource read or write.
-
-This avoids per-player background jobs and makes resource generation deterministic.
-
-## Timed action requirement
-
-Actions need reliable resolution. Two viable approaches:
-
-1. Resolve due actions lazily whenever a user loads the app.
-2. Run a periodic worker that resolves due actions.
-
-Recommendation for early build:
-
-- Use lazy resolution plus a periodic worker for Slack and world consistency.
+MVP can resolve actions lazily when a player calls status, actions, or log. A periodic worker can be added later for world events and multiplayer consistency.
 
 ## Deployment assumption
 
-The central game server can start in a persistent workspace or small internal deployment. Long-term, it should run somewhere less fragile than a personal workspace if people actually play.
+A workspace-hosted server is acceptable for the earliest prototype. If more than a small group plays, move the central server to a more durable internal deployment.
 
-[REVIEW] Decide whether a workspace-hosted server is acceptable for Season 0 or if it should be deployed as a small service immediately.
+## Stack decision remains open
 
-## Future repository shape
-
-Possible repository layout:
-
-```text
-codernauts/
-  docs/
-  server/
-  web/
-  cli/
-  deploy/
-  scripts/
-```
-
-Alternative for Go monolith:
-
-```text
-codernauts/
-  cmd/server/
-  cmd/cli/
-  internal/game/
-  internal/httpapi/
-  internal/store/
-  web/
-  docs/
-```
-
-[REVIEW] Repository shape depends on stack choice.
+[REVIEW] Choose stack after confirming implementation preferences. Go plus Postgres is a strong fit for a small API server. TypeScript may be faster if the starter client is also TypeScript.
