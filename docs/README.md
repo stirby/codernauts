@@ -1,15 +1,15 @@
-# Workspace Frontier gameplay docs
+# Codernauts gameplay docs
 
-Workspace Frontier is an asynchronous multiplayer idle strategy game for Coder employees. Players enter through a Coder workspace, receive an anonymous astronaut identity, manage a starting planet on a hidden 2D grid, grow production, scout nearby space, expand to other planets, and compete on daily anonymous leaderboards.
+Codernauts is an asynchronous multiplayer idle strategy game for Coder employees. Players enter through a Coder workspace, receive an anonymous astronaut identity, manage a starting planet on a hidden 2D grid, grow production, scout nearby space, expand to other planets, and compete on daily anonymous leaderboards.
 
 This docs folder is intentionally gameplay-first. Architecture, implementation details, and deployment decisions should be designed after the gameplay plan is reviewed.
 
 ## Current recommended shape
 
-- **Working title:** Workspace Frontier
+- **Working title:** Codernauts
 - **Season 0 theme:** The Mining Race
 - **Primary interface:** Slim web UI first, CLI later
-- **MVP multiplayer surface:** Shared leaderboard, hidden map, adjacent scouting, expansion into empty planets
+- **MVP focus:** Individual idle loop, game architecture, slim web UI, and lightweight shared context
 - **Deferred systems:** Trade, factions, raids, espionage, conquest
 - **Identity model:** Real Coder identity stored server-side, anonymous astronaut identity shown in game
 - **Game cadence:** Short seasonal rounds with daily Slack reports
@@ -45,7 +45,7 @@ This docs folder is intentionally gameplay-first. Architecture, implementation d
 
 - Start with seasons, not one permanent world.
 - Start with no combat. Add raids only after the core loop is proven.
-- Start with one native rare resource per player only when trade is introduced.
+- Defer rare resources and trading until the individual game loop works.
 - Keep the first web UI text-heavy and button-driven, similar to Universal Paperclips.
 - Make the game playable in 30 to 90 second check-ins.
 - Never expose real employee names in public game surfaces by default.

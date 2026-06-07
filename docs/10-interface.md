@@ -18,7 +18,7 @@ Reasoning:
 Single page, no heavy graphics:
 
 ```text
-Workspace Frontier
+Codernauts
 Astronaut Finch-12 | Season 0 Day 1 | Planet Vesta-41
 
 Resources
@@ -112,12 +112,12 @@ Future can add a small ASCII or HTML grid.
 Potential commands:
 
 ```bash
-workspace-frontier status
-workspace-frontier upgrade mine
-workspace-frontier scout east
-workspace-frontier claim east
-workspace-frontier leaderboard
-workspace-frontier log
+codernauts status
+codernauts upgrade mine
+codernauts scout east
+codernauts claim east
+codernauts leaderboard
+codernauts log
 ```
 
 Example status output:

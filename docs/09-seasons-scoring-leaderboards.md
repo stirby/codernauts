@@ -77,7 +77,7 @@ Season counters persist for final awards.
 ## Slack daily report example
 
 ```text
-Daily Workspace Frontier Report
+Daily Codernauts Report
 Season 0, Day 2
 
 Top Miners
@@ -104,7 +104,7 @@ Notable Events
 ## Final season report example
 
 ```text
-Workspace Frontier Season 0 Complete
+Codernauts Season 0 Complete
 
 Overall Standings
 1. Astronaut Cobalt-7

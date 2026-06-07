@@ -2,7 +2,7 @@
 
 ## One-line pitch
 
-Workspace Frontier is an asynchronous multiplayer idle strategy game where each Coder employee provisions into a hidden planet, grows an outpost, scouts a shared galaxy, expands, and competes on anonymous daily leaderboards.
+Codernauts is an asynchronous multiplayer idle strategy game where each Coder employee provisions into a hidden planet, grows an outpost, scouts a shared galaxy, expands, and competes on anonymous daily leaderboards.
 
 ## Player fantasy
 
@@ -73,21 +73,21 @@ Secondary audience:
 
 ## Working title options
 
-Recommended:
+Selected working title:
 
-1. **Workspace Frontier**
-2. **Coder Colonies**
-3. **Planetfall**
+1. **Codernauts**
 
-Other options from the original plan:
+Former alternatives:
 
+- Coder Colonies
+- Planetfall
 - Terraform Galaxy
 - Idle Orbit
 - The Grid
 - Provisioned Worlds
 - Astronauts of Coder
 
-[REVIEW] Choose a working title before creating a repository, template, and Slack bot identity. The docs use Workspace Frontier as the default.
+Decision: Codernauts is the working name for the repository, docs, template, and Slack bot identity.
 
 ## Coder flavor vocabulary
 
@@ -105,4 +105,4 @@ Other options from the original plan:
 | Colonization ship | Dev Container |
 | Faction | Organization |
 
-[REVIEW] Decide how heavily to lean into Coder product terms. Too much internal jargon may be funny for employees but confusing for future reuse.
+Decision: Use a light sprinkle of Coder terms for flavor, but do not make every mechanic depend on Coder product terminology. The game should stand on its own even if some copy uses workspace and developer infrastructure flavor.

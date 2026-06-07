@@ -18,9 +18,9 @@ Recommended MVP resources:
 | Ore | Basic construction and expansion | Mines and planets | Buildings, upgrades, claims |
 | Energy | Gating resource for scanning and advanced upgrades | Solar arrays and biome modifiers | Scouting, labs, claims |
 | Research | Unlocks new mechanics and upgrade tiers | Labs | Scanner, automation, advanced production |
-| Credits | Score and future trade currency | Daily grants or market actions, future | Trade routes, faction fees, future |
+| Credits | Future trade currency | Future market or trade systems | Trade routes, faction fees, future |
 
-[REVIEW] Recommendation: exclude credits from Season 0 unless a clear sink exists. Keep them as Version 2 trade currency.
+Decision: Exclude credits from the MVP. Season 0 focuses on the individual production loop with ore, energy, and research only.
 
 ## Later resources
 
@@ -58,7 +58,7 @@ Recommended Version 2 rule:
 - Advanced upgrades require two or three different rare resources.
 - Players can gain access through trade or faction membership.
 
-[REVIEW] Decide whether rare resources should be public after trade, after scouting, or only after a stronger scan.
+Decision: Defer rare resources, trading, and related visibility rules until after the MVP. The MVP should not include economy or trading systems beyond the individual production loop.
 
 ## Idle production model
 

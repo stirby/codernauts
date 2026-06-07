@@ -16,18 +16,21 @@ Recommended order:
 
 ## Season 0 multiplayer
 
+Season 0 is primarily an individual experience with light shared-world context.
+
 Season 0 includes:
 
-- Shared world map
+- Individual idle production
+- Shared world map, as architecture groundwork
 - Anonymous players
-- Occupied planet discovery
-- Expansion into empty planets
+- Occupied planet discovery, if the shared map is ready
+- Expansion into empty planets, if the shared map is ready
 - Daily leaderboards
 - Notable world events
 
 Season 0 excludes:
 
-- Trade
+- Trading and economy systems beyond individual production
 - Factions
 - Combat
 - Resource transfers
@@ -106,7 +109,7 @@ Recommended trade model:
 - Routes can be cancelled with a cooldown.
 - Routes generate daily trade value stats.
 
-[REVIEW] Decide how players negotiate trade without exposing identity or requiring a chat product. Options include preset offers, Slack thread opt-in, or anonymous inbox.
+Decision: Defer trade negotiation entirely. The MVP focuses on game architecture and the individual player experience.
 
 ## Native rare resources, Version 2
 

@@ -4,19 +4,20 @@ This file collects every `[REVIEW]` item from the docs.
 
 ## Naming and flavor
 
-- [REVIEW] Choose a working title before creating a repository, template, and Slack bot identity. Current default: Workspace Frontier.
-- [REVIEW] Decide how heavily to lean into Coder product terms. Too much internal jargon may be funny for employees but confusing for future reuse.
+- Decision: Codernauts is the working name.
+- Decision: Use a light sprinkle of Coder terms, but do not make everything hyper-focused on Coder terminology.
 
 ## Map and world
 
-- [REVIEW] Decide whether the map wraps around at edges. Recommendation: no wrapping for Season 0.
-- [REVIEW] Decide whether players can spawn near coworkers from their team. Recommendation: do not use org chart or team data for placement.
+- Decision: The map does not wrap around at edges.
+- Decision: Do not use org chart, team, or coworker relationship data for placement.
 - [REVIEW] Include special tiles in Season 0 as rare flavor-only discoveries, or defer them entirely. Recommendation: include a few non-interactive discoveries only if simple.
 
 ## Economy
 
-- [REVIEW] Recommendation: exclude credits from Season 0 unless a clear sink exists. Keep them as Version 2 trade currency.
-- [REVIEW] Decide whether rare resources should be public after trade, after scouting, or only after a stronger scan.
+- Decision: Exclude credits from the MVP. Keep them as a possible later trade currency.
+- Decision: Defer rare resources, trading, and related visibility rules until after the MVP.
+- Decision: Do not worry about economy or trading for MVP beyond the individual production loop.
 - [REVIEW] Decide storage cap strictness. Recommendation: generous caps in Season 0.
 - [REVIEW] Starting rates and costs should be playtested quickly.
 
@@ -33,7 +34,7 @@ This file collects every `[REVIEW]` item from the docs.
 ## Multiplayer
 
 - [REVIEW] Decide when an occupied neighbor reveals an anonymous name. Recommendation: not in Season 0 unless it improves fun.
-- [REVIEW] Decide how players negotiate trade without exposing identity or requiring a chat product. Options include preset offers, Slack thread opt-in, or anonymous inbox.
+- Decision: Defer trade negotiation entirely. MVP focus is game architecture and individual experience.
 - [REVIEW] Decide whether faction names can be custom free text. Recommendation: generated names first or moderated custom names.
 - [REVIEW] Decide whether workplace culture can support conflict mechanics. Recommendation: validate cooperation first, then run a limited raid event.
 
@@ -73,11 +74,9 @@ This file collects every `[REVIEW]` item from the docs.
 
 ## Top decisions to make next
 
-1. Confirm working title.
-2. Confirm Season 0 scope: upgrades, scouting, claims, leaderboards only.
+1. Confirm the MVP architecture and data model.
+2. Confirm Season 0 scope with the individual experience as the priority.
 3. Confirm web-first interface.
 4. Confirm anonymous names rotate by season.
-5. Confirm no combat, no trade, no factions in Season 0.
-6. Confirm whether credits are excluded from Season 0.
-7. Confirm 3-workday Season 0 test length.
-8. Confirm one global Slack report time.
+5. Confirm 3-workday Season 0 test length.
+6. Confirm one global Slack report time.

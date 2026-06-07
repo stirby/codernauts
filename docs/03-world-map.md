@@ -25,7 +25,7 @@ Season 0:
 - Scanner II: adjacent orthogonal plus diagonal tiles
 - Scanner III: radius 2 summaries
 
-[REVIEW] Decide whether the map wraps around at edges. Recommendation: no wrapping for Season 0 because it is easier to explain and reason about.
+Decision: The map does not wrap around at edges. Edge tiles are real boundaries for Season 0.
 
 ## Tile states
 
@@ -120,7 +120,7 @@ Recommended constraints:
 - Starting planets should be spaced apart enough to avoid immediate crowding.
 - Each starting player gets at least one claimable planet within two scout actions.
 
-[REVIEW] Decide whether players can spawn near coworkers from their team. Recommendation: do not use org chart or team data for placement.
+Decision: Do not use org chart, team, or coworker relationship data for placement. Starting positions are generated from game-only placement rules.
 
 ## Discovery information
 

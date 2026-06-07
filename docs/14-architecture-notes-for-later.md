@@ -112,7 +112,7 @@ The central game server can start in a persistent workspace or small internal de
 Possible repository layout:
 
 ```text
-workspace-frontier/
+codernauts/
   docs/
   server/
   web/
@@ -124,7 +124,7 @@ workspace-frontier/
 Alternative for Go monolith:
 
 ```text
-workspace-frontier/
+codernauts/
   cmd/server/
   cmd/cli/
   internal/game/
