@@ -1,0 +1,624 @@
+openapi: 3.1.0
+info:
+  title: Codernauts API
+  version: 0.1.0
+  summary: API-first space automation game MVP
+  description: |
+    Codernauts is an API-first programming game. The local MVP lets a player inspect state, scan nearby space, and automate persistent miners that generate resources over time.
+servers:
+  - url: http://localhost:8080
+    description: Local prototype
+security:
+  - bearerAuth: []
+tags:
+  - name: System
+    description: Health and API metadata
+  - name: Player
+    description: Player identity and current state
+  - name: Sector
+    description: Discovered asteroid sites
+  - name: Miners
+    description: Persistent resource-generation objects
+  - name: Actions
+    description: Timed work such as scans
+  - name: Log
+    description: Recent player events
+paths:
+  /v1/health:
+    get:
+      tags: [System]
+      summary: Check service health
+      operationId: getHealth
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /openapi/codernauts.yaml:
+    get:
+      tags: [System]
+      summary: Fetch this OpenAPI document
+      operationId: getOpenAPI
+      security: []
+      responses:
+        "200":
+          description: OpenAPI YAML
+          content:
+            application/yaml:
+              schema:
+                type: string
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/me:
+    get:
+      tags: [Player]
+      summary: Get the authenticated player
+      operationId: getMe
+      responses:
+        "200":
+          description: Player identity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/status:
+    get:
+      tags: [Player]
+      summary: Get complete state for a simple client
+      description: Returns player, outpost, resources, miners, sector, active actions, and suggested next actions.
+      operationId: getStatus
+      responses:
+        "200":
+          description: Current player state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/sector:
+    get:
+      tags: [Sector]
+      summary: List discovered sites in the private sector
+      operationId: getSector
+      responses:
+        "200":
+          description: Known sector sites
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sector"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/miners:
+    get:
+      tags: [Miners]
+      summary: List miners
+      operationId: listMiners
+      responses:
+        "200":
+          description: Player miners
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MinersResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Miners]
+      summary: Build a miner
+      description: Builds an idle persistent miner. Assign it to a discovered asteroid site to increase ore generation.
+      operationId: buildMiner
+      responses:
+        "201":
+          description: Miner was built
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Miner"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/miners/{id}/upgrade:
+    post:
+      tags: [Miners]
+      summary: Upgrade a miner
+      operationId: upgradeMiner
+      parameters:
+        - $ref: "#/components/parameters/MinerId"
+      responses:
+        "200":
+          description: Miner was upgraded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Miner"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/miners/{id}/assign:
+    post:
+      tags: [Miners]
+      summary: Assign a miner to a site
+      operationId: assignMiner
+      parameters:
+        - $ref: "#/components/parameters/MinerId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignMinerRequest"
+            examples:
+              site_id:
+                value:
+                  site_id: site_ast_001
+              siteId:
+                value:
+                  siteId: site_ast_001
+      responses:
+        "200":
+          description: Miner assignment was updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Miner"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/actions:
+    get:
+      tags: [Actions]
+      summary: List actions
+      operationId: listActions
+      responses:
+        "200":
+          description: Player actions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/actions/{id}:
+    get:
+      tags: [Actions]
+      summary: Get one action
+      operationId: getAction
+      parameters:
+        - $ref: "#/components/parameters/ActionId"
+      responses:
+        "200":
+          description: Action details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Action"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/actions/scan:
+    post:
+      tags: [Actions]
+      summary: Start a scan action
+      description: Starts a 30 second scan that lazily reveals one asteroid site when completed.
+      operationId: startScan
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartScanRequest"
+            examples:
+              north:
+                value:
+                  direction: north
+      responses:
+        "202":
+          description: Scan action was accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Action"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/log:
+    get:
+      tags: [Log]
+      summary: List recent log entries
+      operationId: listLogEntries
+      responses:
+        "200":
+          description: Recent events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API token
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: User-generated key for safe scan retries.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 200
+    MinerId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: min_starter
+    ActionId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: act_scan_001
+  responses:
+    BadRequest:
+      description: Request was invalid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Bearer token is missing or invalid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Request conflicts with current state
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, time]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        time:
+          type: string
+          format: date-time
+    MeResponse:
+      type: object
+      required: [player]
+      properties:
+        player:
+          $ref: "#/components/schemas/Player"
+    Player:
+      type: object
+      required: [id, display_name, created_at]
+      properties:
+        id:
+          type: string
+          example: ply_dev
+        display_name:
+          type: string
+          example: Astronaut Vega-7
+        created_at:
+          type: string
+          format: date-time
+    Outpost:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          example: out_vesta_41
+        name:
+          type: string
+          example: Vesta-41
+    Resources:
+      type: object
+      required: [ore, max_ore, energy, max_energy, energy_capacity, energy_used, energy_available, ore_rate_per_second, last_generated_at]
+      properties:
+        ore:
+          type: integer
+          minimum: 0
+          description: Spendable ore balance.
+        max_ore:
+          type: integer
+          minimum: 1
+          description: Ore storage cap.
+        energy:
+          type: integer
+          minimum: 0
+          description: Legacy alias for energy_used.
+        max_energy:
+          type: integer
+          minimum: 1
+          description: Legacy alias for energy_capacity.
+        energy_capacity:
+          type: integer
+          minimum: 1
+          description: Total miner assignment capacity.
+        energy_used:
+          type: integer
+          minimum: 0
+          description: Capacity reserved by assigned miners.
+        energy_available:
+          type: integer
+          minimum: 0
+          description: Remaining capacity available for miner assignments.
+        ore_rate_per_second:
+          type: number
+          minimum: 0
+        last_generated_at:
+          type: string
+          format: date-time
+    Cost:
+      type: object
+      required: [ore]
+      properties:
+        ore:
+          type: integer
+          minimum: 0
+    Miner:
+      type: object
+      required: [id, name, level, ore_rate_per_second, energy_requirement, status, build_cost, created_at]
+      properties:
+        id:
+          type: string
+          example: min_starter
+        name:
+          type: string
+          example: Prospector One
+        level:
+          type: integer
+          minimum: 1
+        ore_rate_per_second:
+          type: number
+          minimum: 0
+        energy_requirement:
+          type: integer
+          minimum: 0
+          description: Energy capacity reserved while this miner is assigned.
+        assigned_site_id:
+          type: string
+          example: site_home_asteroid
+        assigned_site_name:
+          type: string
+          example: Anchor Rock
+        status:
+          type: string
+          enum: [idle, mining]
+        build_cost:
+          $ref: "#/components/schemas/Cost"
+        next_upgrade_cost:
+          $ref: "#/components/schemas/Cost"
+        next_upgrade_preview:
+          $ref: "#/components/schemas/MinerPreview"
+        created_at:
+          type: string
+          format: date-time
+    MinerPreview:
+      type: object
+      additionalProperties: true
+      description: Preview of the same miner after the next upgrade.
+    MinersResponse:
+      type: object
+      required: [miners]
+      properties:
+        miners:
+          type: array
+          items:
+            $ref: "#/components/schemas/Miner"
+    AssignMinerRequest:
+      type: object
+      properties:
+        site_id:
+          type: string
+          example: site_ast_001
+        siteId:
+          type: string
+          example: site_ast_001
+      anyOf:
+        - required: [site_id]
+        - required: [siteId]
+    Site:
+      type: object
+      required: [id, name, kind, x, y, richness, discovered_at, depleted, base_ore_rate_per_second]
+      properties:
+        id:
+          type: string
+          example: site_home_asteroid
+        name:
+          type: string
+          example: Anchor Rock
+        kind:
+          type: string
+          example: asteroid
+        x:
+          type: integer
+        y:
+          type: integer
+        richness:
+          type: integer
+          minimum: 1
+        assigned_miner_id:
+          type: string
+          example: min_starter
+        discovered_at:
+          type: string
+          format: date-time
+        depleted:
+          type: boolean
+        base_ore_rate_per_second:
+          type: number
+          minimum: 0
+    Sector:
+      type: object
+      required: [id, name, sites]
+      properties:
+        id:
+          type: string
+          example: sec_orion
+        name:
+          type: string
+          example: Orion Spur
+        sites:
+          type: array
+          items:
+            $ref: "#/components/schemas/Site"
+    Action:
+      type: object
+      required: [id, type, status, created_at, resolves_at]
+      properties:
+        id:
+          type: string
+          example: act_scan_001
+        type:
+          type: string
+          enum: [scan]
+        status:
+          type: string
+          enum: [pending, completed]
+        created_at:
+          type: string
+          format: date-time
+        resolves_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        request:
+          type: object
+          additionalProperties:
+            type: string
+        result:
+          type: object
+          additionalProperties: true
+    ActionsResponse:
+      type: object
+      required: [actions]
+      properties:
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Action"
+    StartScanRequest:
+      type: object
+      properties:
+        direction:
+          type: string
+          enum: [north, east, south, west]
+          default: north
+    SuggestedAction:
+      type: object
+      required: [key, message]
+      properties:
+        key:
+          type: string
+        message:
+          type: string
+    Status:
+      type: object
+      required: [player, outpost, resources, sector, miners, active_actions, suggested_next_actions]
+      properties:
+        player:
+          $ref: "#/components/schemas/Player"
+        outpost:
+          $ref: "#/components/schemas/Outpost"
+        resources:
+          $ref: "#/components/schemas/Resources"
+        sector:
+          $ref: "#/components/schemas/Sector"
+        miners:
+          type: array
+          items:
+            $ref: "#/components/schemas/Miner"
+        active_actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Action"
+        suggested_next_actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SuggestedAction"
+    LogEntry:
+      type: object
+      required: [id, created_at, message]
+      properties:
+        id:
+          type: string
+          example: log_001
+        created_at:
+          type: string
+          format: date-time
+        message:
+          type: string
+        fields:
+          type: object
+          additionalProperties: true
+    LogResponse:
+      type: object
+      required: [log]
+      properties:
+        log:
+          type: array
+          items:
+            $ref: "#/components/schemas/LogEntry"
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: "#/components/schemas/ErrorBody"
+    ErrorBody:
+      type: object
+      required: [code, message, details]
+      properties:
+        code:
+          type: string
+          example: insufficient_resources
+        message:
+          type: string
+          example: Not enough resources.
+        details:
+          type: object
+          additionalProperties: true

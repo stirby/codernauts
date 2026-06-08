@@ -1,7 +1,64 @@
 # Codernauts
 
-Codernauts is an API-first space automation game for programmers. Players launch a Coder workspace from a game template, receive starter tools, and build their own clients, bots, dashboards, or CLIs against a central game server.
+Codernauts is an API-first space automation game for programmers. Players get starter tools and build their own clients, bots, dashboards, or CLIs against a central game server.
 
-The game should feel closer to Space Traders than a traditional browser idle game. The server owns the world and exposes a stable API. The player experience is writing code that understands that API, makes decisions, and automates a tiny space outpost.
+The local prototype in this repository is playable with one server process and one TypeScript starter client. The game loop is about persistent miners, not repeated manual mining clicks: miners generate ore over time when assigned to asteroid sites, scans reveal new sites, and energy is fixed assignment capacity rather than a regenerating spendable resource.
 
-Start with [`docs/18-true-mvp.md`](docs/18-true-mvp.md) for the current MVP shape, then review [`docs/16-api-contract.md`](docs/16-api-contract.md), [`docs/17-player-template.md`](docs/17-player-template.md), and [`docs/13-open-questions.md`](docs/13-open-questions.md).
+## Quickstart
+
+Start the API server in one terminal:
+
+```bash
+./scripts/dev-server.sh
+```
+
+Run the smoke test in another terminal:
+
+```bash
+./scripts/smoke-test.sh
+```
+
+Try the starter client:
+
+```bash
+cd client
+pnpm install
+pnpm cli status
+pnpm cli sector
+pnpm cli miners
+pnpm bot
+```
+
+Or open the web console:
+
+```bash
+cd client
+pnpm web
+```
+
+Then visit `http://127.0.0.1:5174`. The web console connects to the same API, shows the sector map, refreshes automatically, and has controls for scans, miners, upgrades, and assignments.
+
+The local API defaults are:
+
+```text
+CODERNAUTS_API_URL=http://localhost:8080
+CODERNAUTS_API_TOKEN=dev-token
+```
+
+Useful raw API calls:
+
+```bash
+curl http://localhost:8080/v1/health
+curl -H 'Authorization: Bearer dev-token' http://localhost:8080/v1/status
+curl -X POST -H 'Authorization: Bearer dev-token' -H 'Content-Type: application/json' http://localhost:8080/v1/actions/scan -d '{"direction":"north"}'
+```
+
+## Development checks
+
+```bash
+go test ./...
+cd client && pnpm typecheck && pnpm test && pnpm web:build
+./scripts/smoke-test.sh
+```
+
+Start with [`docs/mvp/README.md`](docs/mvp/README.md) for current scope, then review [`docs/mvp/api.md`](docs/mvp/api.md), [`docs/mvp/client.md`](docs/mvp/client.md), [`docs/mvp/performance.md`](docs/mvp/performance.md), and [`openapi/codernauts.yaml`](openapi/codernauts.yaml).
