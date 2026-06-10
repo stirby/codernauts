@@ -234,7 +234,7 @@ button.ghost {
 
 .top-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
@@ -614,6 +614,25 @@ button.ghost {
 .node-card,
 .space-cell {
   min-height: 10.5rem;
+}
+
+.scan-cell {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.45rem;
+  text-align: center;
+  padding: 0.8rem;
+  border-style: dashed;
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+.scan-cell button {
+  white-space: nowrap;
+}
+
+.scan-cell-active {
+  border-color: rgba(217, 165, 68, 0.7);
 }
 
 .node-card {

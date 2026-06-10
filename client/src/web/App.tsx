@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CodernautsApiError, CodernautsClient } from '../client.js';
 import type { Action, Conversions, Leaderboard, LogEntry, Miner, Sector, Status } from '../client.js';
 import {
-  activeActions,
   activeScan,
   allSites,
   assignedSiteID,
@@ -13,10 +12,10 @@ import {
   isClaimed,
   logEntries,
   nodesFor,
-  scanDirections,
   statusActions,
   statusMiners,
 } from './game-model.js';
+import type { ScanDirection } from './game-model.js';
 import { CaptainPanel } from './components/CaptainPanel.js';
 import { CrusherPanel } from './components/CrusherPanel.js';
 import { FleetPanel } from './components/FleetPanel.js';
@@ -24,7 +23,6 @@ import { Gravelboard } from './components/Gravelboard.js';
 import { GuidePanel } from './components/GuidePanel.js';
 import { LogPanel } from './components/LogPanel.js';
 import { ResourcePanel } from './components/ResourcePanel.js';
-import { ScanPanel } from './components/ScanPanel.js';
 import { SectorMap } from './components/SectorMap.js';
 
 const configuredApiUrl = import.meta.env.VITE_CODERNAUTS_API_URL || '';
@@ -54,7 +52,6 @@ export function App() {
   const [log, setLog] = useState<LogEntry[]>([]);
   const [leaderboard, setLeaderboard] = useState<Leaderboard | undefined>();
   const [conversions, setConversions] = useState<Conversions | undefined>();
-  const [selectedDirection, setSelectedDirection] = useState<(typeof scanDirections)[number]>('north');
   const [assignSelections, setAssignSelections] = useState<Record<string, string>>({});
   const [error, setError] = useState<ErrorState | undefined>();
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | undefined>();
@@ -69,7 +66,6 @@ export function App() {
     [actions, log, miners, sector, status],
   );
   const currentSector = sector ?? status?.sector;
-  const active = activeActions(snapshot);
   const scan = activeScan(snapshot);
   const resources = status?.resources;
   const suggested = status?.suggested_next_actions ?? status?.suggestedNextActions ?? [];
@@ -159,10 +155,13 @@ export function App() {
     setSettings(next);
   }, [draftApiUrl, draftToken]);
 
-  const startScan = useCallback(() => {
-    const key = `scan-${selectedDirection}-${Date.now()}`;
-    void runMutation('scan', () => client.scan(selectedDirection, key));
-  }, [client, runMutation, selectedDirection]);
+  const startScan = useCallback(
+    (direction: ScanDirection) => {
+      const key = `scan-${direction}-${Date.now()}`;
+      void runMutation('scan', () => client.scan(direction, key));
+    },
+    [client, runMutation],
+  );
 
   const buildMiner = useCallback(() => {
     void runMutation('build', () => client.buildMiner());
@@ -300,20 +299,15 @@ export function App() {
           rates={conversions?.rates ?? []}
           resources={resources}
         />
-        <ScanPanel
-          active={active}
-          clockSkewMs={clockSkewMs(status)}
-          disabled={Boolean(scan) || mutating === 'scan'}
-          onDirectionChange={setSelectedDirection}
-          onScan={startScan}
-          selectedDirection={selectedDirection}
-        />
       </section>
 
       <section className="main-grid">
         <SectorMap
+          activeScan={scan}
+          clockSkewMs={clockSkewMs(status)}
           mutating={mutating}
           onClaim={claimNode}
+          onScan={startScan}
           resources={resources}
           sector={currentSector}
           sectorName={sectorName}

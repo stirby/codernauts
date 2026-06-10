@@ -311,6 +311,50 @@ describe('App', () => {
     expect(assignButton.title).toBe('Need more energy capacity.');
   });
 
+  it('starts a scan from an unexplored frontier cell on the map', async () => {
+    const fetcher = mockApi();
+    vi.stubGlobal('fetch', fetcher);
+    render(<App />);
+
+    // node_east_1 sits at (1,0), so the east frontier is distance 2.
+    const scanEast = (await screen.findByRole('button', { name: 'Scan east, distance 2' })) as HTMLButtonElement;
+    expect(scanEast.disabled).toBe(false);
+    expect(screen.getByRole('button', { name: 'Scan north, distance 1' })).toBeTruthy();
+    fireEvent.click(scanEast);
+
+    await waitFor(() => {
+      const scanCall = fetcher.mock.calls.find(([input, init]) => String(input).includes('/v1/actions/scan') && (init as RequestInit | undefined)?.method === 'POST');
+      expect(scanCall).toBeTruthy();
+      expect(String((scanCall?.[1] as RequestInit | undefined)?.body)).toContain('"direction":"east"');
+    });
+  });
+
+  it('shows the countdown on the cell being scanned and blocks the other frontiers', async () => {
+    const resolvesAt = new Date(Date.now() + 30_000).toISOString();
+    const scanningStatus = {
+      ...statusBody,
+      active_actions: [
+        {
+          id: 'act_scan_001',
+          type: 'scan',
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          resolves_at: resolvesAt,
+          request: { direction: 'north', distance: '1' },
+        },
+      ],
+    };
+    vi.stubGlobal('fetch', mockApi(scanningStatus));
+    render(<App />);
+
+    const scanning = await screen.findByText('Scanning north');
+    expect(scanning).toBeTruthy();
+    expect(screen.getByText(/\ds remaining/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Scan north, distance 1' })).toBeNull();
+    const scanEast = screen.getByRole('button', { name: 'Scan east, distance 2' }) as HTMLButtonElement;
+    expect(scanEast.disabled).toBe(true);
+  });
+
   it('renders resources, energy, and the activity log', async () => {
     vi.stubGlobal('fetch', mockApi());
     render(<App />);

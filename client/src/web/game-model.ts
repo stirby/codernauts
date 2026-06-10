@@ -183,11 +183,19 @@ export function isYou(entry: LeaderboardEntry): boolean {
 
 export type MapCellState = 'home' | 'claimed' | 'discovered-unclaimed' | 'empty';
 
+/** Scan affordance attached to the next undiscovered cell out on an axis. */
+export interface MapCellScan {
+  direction: ScanDirection;
+  distance: number;
+  durationSeconds: number;
+}
+
 export interface MapCell {
   x: number;
   y: number;
   state: MapCellState;
   node?: Node;
+  scan?: MapCellScan;
 }
 
 export interface MapModel {
@@ -201,8 +209,12 @@ export interface MapModel {
  * location marks its cell as home.
  */
 export function mapModel(nodes: Node[], location: CodernautLocation): MapModel {
+  const targets = scanTargets(nodes);
   const coordinates = nodes.map((node) => ({ x: node.x ?? 0, y: node.y ?? 0 }));
   coordinates.push({ x: location.x, y: location.y });
+  for (const target of targets.values()) {
+    coordinates.push({ x: target.x, y: target.y });
+  }
   const minX = Math.min(...coordinates.map((point) => point.x), -1);
   const maxX = Math.max(...coordinates.map((point) => point.x), 1);
   const minY = Math.min(...coordinates.map((point) => point.y), -1);
@@ -217,11 +229,54 @@ export function mapModel(nodes: Node[], location: CodernautLocation): MapModel {
   for (let y = minY; y <= maxY; y += 1) {
     for (let x = minX; x <= maxX; x += 1) {
       const node = byCoordinate.get(`${x}:${y}`);
-      cells.push({ x, y, node, state: cellState(node, location, x, y) });
+      const target = node ? undefined : targets.get(`${x}:${y}`);
+      cells.push({ x, y, node, state: cellState(node, location, x, y), scan: target?.scan });
     }
   }
 
   return { columns: maxX - minX + 1, cells };
+}
+
+/** Scan duration mirrors the server: 15s at distance 1 plus 20s per step. */
+export function scanDurationSeconds(distance: number): number {
+  return 15 + 20 * (Math.max(1, distance) - 1);
+}
+
+/**
+ * The four frontier cells, one per direction, keyed by "x:y". Each is the
+ * next undiscovered cell out along its axis, which is exactly what the
+ * server's next scan in that direction will chart.
+ */
+function scanTargets(nodes: Node[]): Map<string, { x: number; y: number; scan: MapCellScan }> {
+  const reach: Record<ScanDirection, number> = { north: 0, east: 0, south: 0, west: 0 };
+  for (const node of nodes) {
+    const x = node.x ?? 0;
+    const y = node.y ?? 0;
+    if (x === 0 && y < 0) {
+      reach.north = Math.max(reach.north, -y);
+    } else if (x > 0 && y === 0) {
+      reach.east = Math.max(reach.east, x);
+    } else if (x === 0 && y > 0) {
+      reach.south = Math.max(reach.south, y);
+    } else if (x < 0 && y === 0) {
+      reach.west = Math.max(reach.west, -x);
+    }
+  }
+
+  const axes: Record<ScanDirection, { x: number; y: number }> = {
+    north: { x: 0, y: -1 },
+    east: { x: 1, y: 0 },
+    south: { x: 0, y: 1 },
+    west: { x: -1, y: 0 },
+  };
+  const targets = new Map<string, { x: number; y: number; scan: MapCellScan }>();
+  for (const direction of scanDirections) {
+    const distance = reach[direction] + 1;
+    const x = axes[direction].x * distance;
+    const y = axes[direction].y * distance;
+    targets.set(`${x}:${y}`, { x, y, scan: { direction, distance, durationSeconds: scanDurationSeconds(distance) } });
+  }
+  return targets;
 }
 
 function cellState(node: Node | undefined, location: CodernautLocation, x: number, y: number): MapCellState {

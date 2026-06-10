@@ -29,6 +29,7 @@ import {
   nodesFor,
   openSites,
   resourceRate,
+  scanDurationSeconds,
   secondsUntil,
   sitesOnClaimedNodes,
   unlockedResources,
@@ -239,12 +240,42 @@ describe('map model', () => {
     const claimedNorth: Node = { id: 'node_north_1', name: 'Rustbelt', x: 0, y: -1, distance: 1, claimed_by: 'ply_dev', sites: [] };
     const model = mapModel([homeNode, eastNode, claimedNorth], codernautLocation(status));
     const byCoordinate = new Map(model.cells.map((cell) => [`${cell.x}:${cell.y}`, cell]));
-    expect(model.columns).toBe(3);
+    // Columns span the west frontier (-1) through the east frontier (2).
+    expect(model.columns).toBe(4);
     expect(byCoordinate.get('0:0')?.state).toBe('home');
     expect(byCoordinate.get('0:-1')?.state).toBe('claimed');
     expect(byCoordinate.get('1:0')?.state).toBe('discovered-unclaimed');
     expect(byCoordinate.get('-1:0')?.state).toBe('empty');
-    expect(model.cells[0]).toMatchObject({ x: -1, y: -1, state: 'empty' });
+    expect(model.cells[0]).toMatchObject({ x: -1, y: -2, state: 'empty' });
+  });
+
+  it('marks the four scan frontiers with distances and durations', () => {
+    const model = mapModel([homeNode], codernautLocation(status));
+    const scans = model.cells.filter((cell) => cell.scan);
+    expect(scans).toHaveLength(4);
+    const byCoordinate = new Map(scans.map((cell) => [`${cell.x}:${cell.y}`, cell.scan]));
+    expect(byCoordinate.get('0:-1')).toMatchObject({ direction: 'north', distance: 1, durationSeconds: 15 });
+    expect(byCoordinate.get('1:0')).toMatchObject({ direction: 'east', distance: 1, durationSeconds: 15 });
+    expect(byCoordinate.get('0:1')).toMatchObject({ direction: 'south', distance: 1, durationSeconds: 15 });
+    expect(byCoordinate.get('-1:0')).toMatchObject({ direction: 'west', distance: 1, durationSeconds: 15 });
+  });
+
+  it('advances a scan frontier past discovered nodes and widens the grid to include it', () => {
+    const north1: Node = { id: 'node_north_1', x: 0, y: -1, distance: 1, sites: [] };
+    const north2: Node = { id: 'node_north_2', x: 0, y: -2, distance: 2, sites: [] };
+    const model = mapModel([homeNode, north1, north2], codernautLocation(status));
+    const target = model.cells.find((cell) => cell.scan?.direction === 'north');
+    expect(target).toMatchObject({ x: 0, y: -3 });
+    expect(target?.scan).toMatchObject({ distance: 3, durationSeconds: 55 });
+    // Cells holding discovered nodes never carry a scan affordance.
+    expect(model.cells.filter((cell) => cell.node && cell.scan)).toHaveLength(0);
+  });
+
+  it('computes scan durations with the server formula', () => {
+    expect(scanDurationSeconds(1)).toBe(15);
+    expect(scanDurationSeconds(2)).toBe(35);
+    expect(scanDurationSeconds(4)).toBe(75);
+    expect(scanDurationSeconds(0)).toBe(15);
   });
 });
 

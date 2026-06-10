@@ -52,8 +52,8 @@ It should show:
 - A gravelboard panel: season name, rank, total gravel, and gravel per hour.
 - A crusher panel: level name, yield multiplier, unlocked resources, next upgrade cost, and convert controls.
 - A 2D grid map with node markers that distinguish the home node, claimed nodes, and discovered unclaimed nodes with their claim costs.
+- Scan buttons on the map's unexplored frontier cells, one per direction, showing the estimated duration and distance. The cell being scanned shows a countdown, and other frontiers are disabled while a scan is active. Scanning happens on the map, not in a separate panel.
 - Sites per node with resource, richness, and assignment state.
-- Active scans with countdowns.
 - Miners, levels, rates, and assignments.
 - Build, upgrade, assign, scan, claim, convert, and crusher upgrade controls.
 - Recent log entries.

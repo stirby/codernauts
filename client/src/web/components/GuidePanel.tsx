@@ -8,7 +8,7 @@ export function GuidePanel({ idleMiners: idle, hasUnclaimedNode, scan }: { idleM
       <PanelTitle kicker="Flight manual" title="The gravel loop" />
       <ul>
         <li>Collect: assigned miners stack up ore, ice, gas, and crystal while you do literally anything else.</li>
-        <li>Expand: scan for new nodes, then claim them to open their mining sites.</li>
+        <li>Expand: hit Scan on an unexplored edge of the map, then claim discovered nodes to open their mining sites.</li>
         <li>Crush: feed spare resources to the crusher, because gravel is the only score there is.</li>
         <li>Climb: the gravelboard ranks codernauts by season gravel, so keep the crusher fed.</li>
         {scan ? <li>Let the active scan finish; the map updates on its own.</li> : null}
