@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -19,7 +20,12 @@ import (
 func main() {
 	addr := flag.String("addr", listenAddrFromEnv(), "HTTP listen address")
 	openAPIPath := flag.String("openapi", envOrDefault("CODERNAUTS_OPENAPI", "openapi/codernauts.yaml"), "OpenAPI document path")
+	timeScale := flag.Float64("time-scale", timeScaleFromEnv(), "game clock speed multiplier, such as 2, 5, or 10")
 	flag.Parse()
+
+	if *timeScale <= 0 {
+		log.Fatalf("time-scale must be positive, got %v", *timeScale)
+	}
 
 	resolvedOpenAPIPath := *openAPIPath
 	if _, err := os.Stat(resolvedOpenAPIPath); err != nil && !filepath.IsAbs(resolvedOpenAPIPath) {
@@ -31,7 +37,12 @@ func main() {
 		}
 	}
 
-	store := game.NewStore(game.RealClock{})
+	var clock game.Clock = game.RealClock{}
+	if *timeScale != 1 {
+		clock = game.NewScaledClock(*timeScale)
+		log.Printf("game clock running at %gx speed", *timeScale)
+	}
+	store := game.NewStore(clock)
 	store.SetAuthToken(envOrDefault("CODERNAUTS_DEV_TOKEN", game.DevToken))
 	handler := server.New(store, resolvedOpenAPIPath).Handler()
 	httpServer := &http.Server{
@@ -66,6 +77,18 @@ func listenAddrFromEnv() string {
 		return ":" + port
 	}
 	return ":8080"
+}
+
+func timeScaleFromEnv() float64 {
+	value := os.Getenv("CODERNAUTS_TIME_SCALE")
+	if value == "" {
+		return 1
+	}
+	scale, err := strconv.ParseFloat(value, 64)
+	if err != nil || scale <= 0 {
+		log.Fatalf("CODERNAUTS_TIME_SCALE must be a positive number, got %q", value)
+	}
+	return scale
 }
 
 func envOrDefault(key, fallback string) string {

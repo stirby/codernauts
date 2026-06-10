@@ -4,12 +4,14 @@ import { PanelTitle } from './PanelTitle.js';
 
 export function ScanPanel({
   active,
+  clockSkewMs = 0,
   disabled,
   selectedDirection,
   onDirectionChange,
   onScan,
 }: {
   active: Action[];
+  clockSkewMs?: number;
   disabled: boolean;
   selectedDirection: (typeof scanDirections)[number];
   onDirectionChange: (direction: (typeof scanDirections)[number]) => void;
@@ -40,7 +42,7 @@ export function ScanPanel({
       {active.length > 0 ? (
         <div className="action-list">
           {active.map((action) => (
-            <ActionCard action={action} key={action.id} />
+            <ActionCard action={action} clockSkewMs={clockSkewMs} key={action.id} />
           ))}
         </div>
       ) : (
@@ -50,13 +52,13 @@ export function ScanPanel({
   );
 }
 
-function ActionCard({ action }: { action: Action }) {
+function ActionCard({ action, clockSkewMs }: { action: Action; clockSkewMs: number }) {
   const resolvesAt = actionResolvesAt(action);
   return (
     <article className="mini-card">
       <strong>{action.type ?? 'action'}</strong>
       <span>{actionDirection(action) ?? 'unknown direction'}</span>
-      <span>{secondsUntil(resolvesAt)}s remaining</span>
+      <span>{secondsUntil(resolvesAt, Date.now() + clockSkewMs)}s remaining</span>
     </article>
   );
 }

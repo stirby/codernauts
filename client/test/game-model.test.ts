@@ -6,6 +6,7 @@ import {
   canAssignMiner,
   canUpgradeCrusher,
   claimable,
+  clockSkewMs,
   codernautLocation,
   conversionPreview,
   energyAvailable,
@@ -290,5 +291,22 @@ describe('formatting and energy helpers', () => {
     expect(secondsUntil('2026-06-07T12:00:05Z')).toBe(5);
     expect(secondsUntil('2026-06-07T11:59:59Z')).toBe(0);
     vi.useRealTimers();
+  });
+
+  it('anchors countdowns to an explicit reference time', () => {
+    expect(secondsUntil('2026-06-07T12:00:10Z', Date.parse('2026-06-07T12:00:07Z'))).toBe(3);
+    expect(secondsUntil('2026-06-07T12:00:10Z', Date.parse('2026-06-07T12:00:30Z'))).toBe(0);
+  });
+
+  it('derives clock skew from server_time so scaled clocks stay truthful', () => {
+    const nowMs = Date.parse('2026-06-07T12:00:00Z');
+    expect(clockSkewMs({ server_time: '2026-06-07T12:01:00Z' }, nowMs)).toBe(60_000);
+    expect(clockSkewMs({ server_time: '2026-06-07T11:59:30Z' }, nowMs)).toBe(-30_000);
+    expect(clockSkewMs({}, nowMs)).toBe(0);
+    expect(clockSkewMs(undefined, nowMs)).toBe(0);
+    expect(clockSkewMs({ server_time: 'garbage' }, nowMs)).toBe(0);
+    // A scan 100 game-seconds out reads correctly through the skew.
+    const skew = clockSkewMs({ server_time: '2026-06-07T12:10:00Z' }, nowMs);
+    expect(secondsUntil('2026-06-07T12:11:40Z', nowMs + skew)).toBe(100);
   });
 });

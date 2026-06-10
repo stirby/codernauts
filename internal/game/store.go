@@ -727,6 +727,9 @@ func ClaimCostForDistance(distance int) Cost {
 
 func (s *Store) statusLocked(now time.Time) Status {
 	return Status{
+		// ServerTime lets clients anchor countdowns to the game clock,
+		// which outruns wall time when the server runs at a scaled speed.
+		ServerTime:           now,
 		Player:               s.state.player,
 		Outpost:              s.state.outpost,
 		Resources:            s.resourcesLocked(),

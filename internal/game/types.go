@@ -240,6 +240,7 @@ type Leaderboard struct {
 }
 
 type Status struct {
+	ServerTime           time.Time         `json:"server_time"`
 	Player               Player            `json:"player"`
 	Outpost              Outpost           `json:"outpost"`
 	Resources            Resources         `json:"resources"`

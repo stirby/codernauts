@@ -939,8 +939,12 @@ components:
           type: string
     Status:
       type: object
-      required: [player, outpost, resources, gravel, crusher, sector, miners, active_actions, suggested_next_actions]
+      required: [server_time, player, outpost, resources, gravel, crusher, sector, miners, active_actions, suggested_next_actions]
       properties:
+        server_time:
+          type: string
+          format: date-time
+          description: Current game-clock time. Anchor countdowns to this instead of wall time; it runs faster than real time when the server uses a scaled clock for testing.
         player:
           $ref: "#/components/schemas/Player"
         outpost:

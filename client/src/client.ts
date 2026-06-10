@@ -239,6 +239,8 @@ export interface SuggestedAction {
 }
 
 export interface Status {
+  server_time?: string;
+  serverTime?: string;
   player?: Player;
   outpost?: Outpost;
   resources?: Resources;

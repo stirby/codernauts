@@ -8,6 +8,7 @@ import {
   assignedSiteID,
   buildCost,
   canAfford,
+  clockSkewMs,
   idleMiners,
   isClaimed,
   logEntries,
@@ -301,6 +302,7 @@ export function App() {
         />
         <ScanPanel
           active={active}
+          clockSkewMs={clockSkewMs(status)}
           disabled={Boolean(scan) || mutating === 'scan'}
           onDirectionChange={setSelectedDirection}
           onScan={startScan}

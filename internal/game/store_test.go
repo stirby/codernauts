@@ -26,6 +26,16 @@ func newTestStore(t *testing.T) (*game.Store, *fakeClock) {
 	return game.NewStore(clock), clock
 }
 
+func TestStatusReportsServerTime(t *testing.T) {
+	store, clock := newTestStore(t)
+	clock.Advance(42 * time.Second)
+
+	status := store.Status()
+	if got, want := status.ServerTime, clock.Now().UTC(); !got.Equal(want) {
+		t.Fatalf("server time = %v, want %v", got, want)
+	}
+}
+
 func TestHomeNodeStartsClaimedWithThreeSites(t *testing.T) {
 	store, _ := newTestStore(t)
 	status := store.Status()

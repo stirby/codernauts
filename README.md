@@ -45,6 +45,13 @@ CODERNAUTS_API_URL=http://localhost:8080
 CODERNAUTS_API_TOKEN=dev-token
 ```
 
+For fast playtesting, run the server with a scaled game clock. Every duration compresses together: resource accrual, scan timers, and the gravel-per-hour window.
+
+```bash
+go run ./cmd/codernauts-server -time-scale 10
+# or: CODERNAUTS_TIME_SCALE=10 go run ./cmd/codernauts-server
+```
+
 Useful raw API calls:
 
 ```bash

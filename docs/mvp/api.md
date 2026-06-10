@@ -50,6 +50,7 @@ All endpoints except health and OpenAPI require auth and share the same CORS beh
 
 `GET /v1/status` is the primary read endpoint for clients and bots. It returns:
 
+- `server_time`
 - `player`
 - `outpost`
 - `resources`
@@ -59,6 +60,8 @@ All endpoints except health and OpenAPI require auth and share the same CORS beh
 - `miners`
 - `active_actions`
 - `suggested_next_actions`
+
+`server_time` is the current game-clock time. Clients should anchor countdowns to it rather than local wall time, because the server may run a scaled clock for testing (see the `-time-scale` flag).
 
 Suggested next actions are `{"key": "...", "message": "..."}` objects, included when applicable, in this priority order:
 

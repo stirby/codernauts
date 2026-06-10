@@ -360,7 +360,7 @@ export function actionDirection(action: Action): string | undefined {
   return undefined;
 }
 
-export function secondsUntil(value: string | undefined): number {
+export function secondsUntil(value: string | undefined, nowMs: number = Date.now()): number {
   if (!value) {
     return 0;
   }
@@ -368,7 +368,24 @@ export function secondsUntil(value: string | undefined): number {
   if (Number.isNaN(time)) {
     return 0;
   }
-  return Math.max(0, Math.ceil((time - Date.now()) / 1000));
+  return Math.max(0, Math.ceil((time - nowMs) / 1000));
+}
+
+/**
+ * Offset in milliseconds between the server's game clock and this machine's
+ * wall clock at the moment the status arrived. Countdowns add this skew so
+ * they stay truthful when the server runs at a scaled speed for testing.
+ */
+export function clockSkewMs(status: Status | undefined, nowMs: number = Date.now()): number {
+  const serverTime = status?.server_time ?? status?.serverTime;
+  if (!serverTime) {
+    return 0;
+  }
+  const parsed = Date.parse(serverTime);
+  if (Number.isNaN(parsed)) {
+    return 0;
+  }
+  return parsed - nowMs;
 }
 
 export function resourcePercent(value: number | undefined, max: number | undefined): number {
