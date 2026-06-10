@@ -3,7 +3,18 @@ import { Command } from 'commander';
 import { CodernautsApiError, CodernautsClient } from './client.js';
 import { loadConfig } from './config.js';
 import { runBot } from './bot.js';
-import { printActions, printJson, printMiners, printSector, printStatus } from './format.js';
+import {
+  printActions,
+  printConversionResult,
+  printConversions,
+  printJson,
+  printLeaderboard,
+  printMiners,
+  printNodes,
+  printSector,
+  printStatus,
+} from './format.js';
+import { nodesFor } from './web/game-model.js';
 
 const config = loadConfig();
 let client = new CodernautsClient(config);
@@ -12,7 +23,7 @@ const program = new Command();
 program
   .name('codernauts')
   .description('Beginner-friendly CLI for the Codernauts space automation API')
-  .version('0.1.0')
+  .version('0.2.0')
   .option('--api-url <url>', 'API server URL', config.apiUrl)
   .option('--token <token>', 'bearer auth token', config.token)
   .hook('preAction', (command) => {
@@ -22,9 +33,49 @@ program
 
 program
   .command('status')
-  .description('Show pilot, resources, miners, and active actions')
+  .description('Show codernaut, location, gravel, crusher, resources, and active actions')
   .action(async () => {
     printStatus(await client.status());
+  });
+
+program
+  .command('leaderboard')
+  .description('Show the season gravelboard')
+  .action(async () => {
+    printLeaderboard(await client.leaderboard());
+  });
+
+program
+  .command('conversions')
+  .description('Show gravel conversion rates and which resources the crusher accepts')
+  .action(async () => {
+    printConversions(await client.conversions());
+  });
+
+program
+  .command('convert')
+  .description('Crush a resource into gravel; omit the amount to crush the full balance')
+  .argument('<resource>', 'ore, ice, gas, or crystal')
+  .argument('[amount]', 'whole units to crush; defaults to everything')
+  .option('-k, --idempotency-key <key>', 'safe retry key for this conversion')
+  .action(async (resource: string, amount: string | undefined, options: { idempotencyKey?: string }) => {
+    printConversionResult(await client.convert(resource, parseAmountArgument(amount), options.idempotencyKey));
+  });
+
+program
+  .command('claim')
+  .description('Claim a discovered node so miners can work its sites')
+  .argument('<nodeId>', 'node id, for example node_east_1')
+  .option('-k, --idempotency-key <key>', 'safe retry key for this claim')
+  .action(async (nodeId: string, options: { idempotencyKey?: string }) => {
+    printJson(await client.claimNode(nodeId, options.idempotencyKey));
+  });
+
+program
+  .command('nodes')
+  .description('List discovered nodes with traits, claim state, claim costs, and sites')
+  .action(async () => {
+    printNodes(nodesFor(await client.sector()));
   });
 
 program
@@ -36,14 +87,14 @@ program
 
 program
   .command('sector')
-  .description('Show discovered sites in the current sector')
+  .description('Show discovered nodes and sites in the current sector')
   .action(async () => {
     printSector(await client.sector());
   });
 
 program
   .command('scan')
-  .description('Scan nearby space for resource sites')
+  .description('Scan a direction for the next undiscovered node; farther scans take longer')
   .argument('[direction]', 'north, east, south, or west', 'north')
   .option('-k, --idempotency-key <key>', 'safe retry key for this scan')
   .action(async (direction: string, options: { idempotencyKey?: string }) => {
@@ -66,8 +117,15 @@ program
   });
 
 program
+  .command('upgrade-crusher')
+  .description('Upgrade the outpost crusher to the next, grander name')
+  .action(async () => {
+    printJson(await client.upgradeCrusher());
+  });
+
+program
   .command('assign-miner')
-  .description('Assign a miner to a discovered resource site')
+  .description('Assign a miner to a site on a claimed node')
   .argument('<minerId>', 'miner id')
   .argument('<siteId>', 'site id')
   .action(async (minerId: string, siteId: string) => {
@@ -128,6 +186,17 @@ program.parseAsync().catch((error: unknown) => {
   console.error(error);
   process.exit(1);
 });
+
+function parseAmountArgument(amount?: string): number | undefined {
+  if (amount === undefined) {
+    return undefined;
+  }
+  const value = Number(amount);
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error('Amount must be a whole number of at least 1, or omitted to crush everything.');
+  }
+  return value;
+}
 
 function parseJsonArgument(json?: string): unknown {
   if (!json) {

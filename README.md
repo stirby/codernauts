@@ -2,7 +2,7 @@
 
 Codernauts is an API-first space automation game for programmers. Players get starter tools and build their own clients, bots, dashboards, or CLIs against a central game server.
 
-The local prototype in this repository is playable with one server process and one TypeScript starter client. The game loop is about persistent miners, not repeated manual mining clicks: miners generate ore over time when assigned to asteroid sites, scans reveal new sites, and energy is fixed assignment capacity rather than a regenerating spendable resource.
+The local prototype in this repository is playable with one server process and one TypeScript starter client. The loop is collect, expand, crush, climb: persistent miners generate uncapped resources on claimed nodes, scans reveal new nodes to claim, the crusher converts everything into gravel, and gravel is the only leaderboard score for the season. Energy is fixed assignment capacity rather than a regenerating spendable resource.
 
 ## Quickstart
 

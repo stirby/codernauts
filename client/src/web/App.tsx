@@ -1,41 +1,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CodernautsApiError, CodernautsClient } from '../client.js';
-import type { Action, LogEntry, Miner, Resources, Sector, Site, Status, SuggestedAction } from '../client.js';
+import type { Action, Conversions, Leaderboard, LogEntry, Miner, Sector, Status } from '../client.js';
 import {
-  actionDirection,
-  actionResolvesAt,
   activeActions,
   activeScan,
-  assignedMinerID,
+  allSites,
   assignedSiteID,
-  availableSites,
   buildCost,
   canAfford,
-  canAssignMiner,
-  energyCapacity,
-  energyUsed,
-  formatCost,
-  formatDateTime,
-  formatRate,
   idleMiners,
+  isClaimed,
   logEntries,
-  maxOre,
-  minerByID,
-  minerEnergyRequirement,
-  minerRate,
-  ore,
-  oreRate,
-  resourcePercent,
+  nodesFor,
   scanDirections,
-  secondsUntil,
-  siteByID,
-  siteRate,
-  sitesFor,
   statusActions,
   statusMiners,
-  trimNumber,
-  upgradeCost,
 } from './game-model.js';
+import { CaptainPanel } from './components/CaptainPanel.js';
+import { CrusherPanel } from './components/CrusherPanel.js';
+import { FleetPanel } from './components/FleetPanel.js';
+import { Gravelboard } from './components/Gravelboard.js';
+import { GuidePanel } from './components/GuidePanel.js';
+import { LogPanel } from './components/LogPanel.js';
+import { ResourcePanel } from './components/ResourcePanel.js';
+import { ScanPanel } from './components/ScanPanel.js';
+import { SectorMap } from './components/SectorMap.js';
 
 const configuredApiUrl = import.meta.env.VITE_CODERNAUTS_API_URL || '';
 const defaultToken = import.meta.env.VITE_CODERNAUTS_API_TOKEN || 'dev-token';
@@ -62,6 +51,8 @@ export function App() {
   const [miners, setMiners] = useState<Miner[]>([]);
   const [actions, setActions] = useState<Action[]>([]);
   const [log, setLog] = useState<LogEntry[]>([]);
+  const [leaderboard, setLeaderboard] = useState<Leaderboard | undefined>();
+  const [conversions, setConversions] = useState<Conversions | undefined>();
   const [selectedDirection, setSelectedDirection] = useState<(typeof scanDirections)[number]>('north');
   const [assignSelections, setAssignSelections] = useState<Record<string, string>>({});
   const [error, setError] = useState<ErrorState | undefined>();
@@ -76,7 +67,7 @@ export function App() {
     () => ({ status: status ?? {}, sector: sector ?? {}, miners, actions, log }),
     [actions, log, miners, sector, status],
   );
-  const sites = sitesFor(sector ?? status?.sector);
+  const currentSector = sector ?? status?.sector;
   const active = activeActions(snapshot);
   const scan = activeScan(snapshot);
   const resources = status?.resources;
@@ -91,11 +82,13 @@ export function App() {
       }
       try {
         const nextStatus = await client.status();
-        const [nextSector, nextMiners, nextActions, nextLog] = await Promise.all([
+        const [nextSector, nextMiners, nextActions, nextLog, nextLeaderboard, nextConversions] = await Promise.all([
           Promise.resolve(nextStatus.sector ?? client.sector()),
           Promise.resolve(statusMiners(nextStatus).length > 0 ? statusMiners(nextStatus) : client.miners()),
           Promise.resolve(statusActions(nextStatus).length > 0 ? statusActions(nextStatus) : client.actions()),
           client.log(),
+          client.leaderboard().catch(() => undefined),
+          client.conversions().catch(() => undefined),
         ]);
         if (requestSeq.current !== seq) {
           return;
@@ -106,9 +99,11 @@ export function App() {
         setMiners(nextMiners);
         setActions(nextActions);
         setLog(parsedLog);
+        setLeaderboard(nextLeaderboard);
+        setConversions(nextConversions);
         setLastUpdatedAt(new Date());
         setError(undefined);
-        setAssignSelections((current) => reconcileAssignSelections(current, nextMiners, sitesFor(nextSector)));
+        setAssignSelections((current) => reconcileAssignSelections(current, nextMiners, nextSector));
       } catch (caught) {
         if (requestSeq.current !== seq) {
           return;
@@ -191,19 +186,39 @@ export function App() {
     [assignSelections, client, runMutation],
   );
 
+  const claimNode = useCallback(
+    (nodeID: string) => {
+      const key = `claim-${nodeID}-${Date.now()}`;
+      void runMutation(`claim-${nodeID}`, () => client.claimNode(nodeID, key));
+    },
+    [client, runMutation],
+  );
+
+  const convertResource = useCallback(
+    (resource: string) => {
+      const key = `convert-${resource}-${Date.now()}`;
+      void runMutation(`convert-${resource}`, () => client.convert(resource, undefined, key));
+    },
+    [client, runMutation],
+  );
+
+  const upgradeCrusher = useCallback(() => {
+    void runMutation('upgrade-crusher', () => client.upgradeCrusher());
+  }, [client, runMutation]);
+
   const fleetBuildCost = buildCost(miners);
   const canBuildMiner = canAfford(resources, fleetBuildCost);
-  const hasAnySite = sites.length > 0;
-  const sectorName = (sector ?? status?.sector)?.name ?? (sector ?? status?.sector)?.id ?? 'Local space';
+  const hasUnclaimedNode = nodesFor(currentSector).some((node) => !isClaimed(node));
+  const sectorName = currentSector?.name ?? currentSector?.id ?? 'Local space';
 
   return (
     <main className="shell">
       <header className="hero panel">
         <div>
           <p className="eyebrow">Codernauts control deck</p>
-          <h1>Vesta-41 automation console</h1>
+          <h1>Vesta-41 gravel works</h1>
           <p className="hero-copy">
-            Build tiny tools, scan quiet space, and keep your miners working while the API hums along.
+            Mine quiet space, crush everything into gravel, and climb the season gravelboard while the API hums along.
           </p>
         </div>
         <div className="hero-status" aria-live="polite">
@@ -212,28 +227,55 @@ export function App() {
         </div>
       </header>
 
-      <section className="panel connection-panel" aria-label="Connection settings">
-        <label>
+      <form
+        className="panel connection-panel"
+        aria-label="Connection settings"
+        onSubmit={(event) => {
+          event.preventDefault();
+          saveSettings();
+        }}
+      >
+        <label htmlFor="connection-api-url">
           <span>API URL</span>
-          <input value={draftApiUrl} onChange={(event) => setDraftApiUrl(event.target.value)} spellCheck={false} />
+          <input
+            id="connection-api-url"
+            name="apiUrl"
+            value={draftApiUrl}
+            onChange={(event) => setDraftApiUrl(event.target.value)}
+            spellCheck={false}
+          />
         </label>
-        <label>
+        <label htmlFor="connection-token">
           <span>Token</span>
-          <input value={draftToken} onChange={(event) => setDraftToken(event.target.value)} spellCheck={false} type="password" />
+          <input
+            id="connection-token"
+            name="token"
+            value={draftToken}
+            onChange={(event) => setDraftToken(event.target.value)}
+            spellCheck={false}
+            type="password"
+            autoComplete="current-password"
+          />
         </label>
         <div className="connection-actions">
-          <button type="button" onClick={saveSettings}>
+          <button type="submit">
             Save and reconnect
           </button>
           <button type="button" className="ghost" disabled={loading} onClick={() => void refresh('foreground')}>
             Refresh now
           </button>
-          <label className="check-control">
-            <input checked={autoRefresh} onChange={(event) => setAutoRefresh(event.target.checked)} type="checkbox" />
+          <label className="check-control" htmlFor="connection-auto-refresh">
+            <input
+              id="connection-auto-refresh"
+              name="autoRefresh"
+              checked={autoRefresh}
+              onChange={(event) => setAutoRefresh(event.target.checked)}
+              type="checkbox"
+            />
             <span>Auto refresh</span>
           </label>
         </div>
-      </section>
+      </form>
 
       {error ? (
         <section className="error-card" role="alert">
@@ -242,10 +284,22 @@ export function App() {
         </section>
       ) : null}
 
+      <section className="board-grid">
+        <Gravelboard leaderboard={leaderboard} status={status} />
+        <CaptainPanel lastUpdatedAt={lastUpdatedAt} status={status} suggested={suggested} />
+      </section>
+
       <section className="top-grid">
         <ResourcePanel resources={resources} />
-        <CaptainPanel lastUpdatedAt={lastUpdatedAt} status={status} suggested={suggested} />
-        <ActionPanel
+        <CrusherPanel
+          crusher={conversions?.crusher ?? status?.crusher}
+          mutating={mutating}
+          onConvert={convertResource}
+          onUpgrade={upgradeCrusher}
+          rates={conversions?.rates ?? []}
+          resources={resources}
+        />
+        <ScanPanel
           active={active}
           disabled={Boolean(scan) || mutating === 'scan'}
           onDirectionChange={setSelectedDirection}
@@ -256,16 +310,17 @@ export function App() {
 
       <section className="main-grid">
         <SectorMap
-          miners={miners}
+          mutating={mutating}
+          onClaim={claimNode}
           resources={resources}
-          onAssign={assignMiner}
-          onSelectSite={(minerID, siteID) => setAssignSelections((current) => ({ ...current, [minerID]: siteID }))}
+          sector={currentSector}
           sectorName={sectorName}
-          selectedSites={assignSelections}
-          sites={sites}
+          status={status}
         />
         <FleetPanel
           assignSelections={assignSelections}
+          buildCost={fleetBuildCost}
+          canBuildMiner={canBuildMiner}
           miners={miners}
           mutating={mutating}
           onAssign={assignMiner}
@@ -273,460 +328,21 @@ export function App() {
           onSelectSite={(minerID, siteID) => setAssignSelections((current) => ({ ...current, [minerID]: siteID }))}
           onUpgrade={upgradeMiner}
           resources={resources}
-          sites={sites}
-          canBuildMiner={canBuildMiner}
-          buildCost={fleetBuildCost}
+          sector={currentSector}
         />
       </section>
 
       <section className="bottom-grid">
         <LogPanel entries={log} />
-        <GuidePanel hasAnySite={hasAnySite} idleMiners={idleMiners(miners)} scan={scan} />
+        <GuidePanel hasUnclaimedNode={hasUnclaimedNode} idleMiners={idleMiners(miners)} scan={scan} />
       </section>
     </main>
   );
 }
 
-function ResourcePanel({ resources }: { resources: Resources | undefined }) {
-  const currentOre = ore(resources);
-  const oreMax = maxOre(resources);
-  const currentEnergy = energyUsed(resources);
-  const energyMax = energyCapacity(resources);
-
-  return (
-    <section className="panel resource-panel" aria-label="Resources">
-      <PanelTitle kicker="Hold" title="Resources" />
-      <ResourceMeter label="Ore" max={oreMax} rate={oreRate(resources)} value={currentOre} />
-      <ResourceMeter detail="used by assigned miners" label="Energy capacity" max={energyMax} value={currentEnergy} />
-    </section>
-  );
-}
-
-function ResourceMeter({ label, value, max, rate, detail }: { label: string; value: number; max?: number; rate?: number; detail?: string }) {
-  return (
-    <div className="resource-meter">
-      <div className="resource-row">
-        <span>{label}</span>
-        <strong>
-          {trimNumber(value)}
-          {typeof max === 'number' ? ` / ${trimNumber(max)}` : ''}
-        </strong>
-      </div>
-      <div className="meter-track" aria-label={`${label} meter`}>
-        <span style={{ width: `${resourcePercent(value, max)}%` }} />
-      </div>
-      <small>{detail ?? formatRate(rate)}</small>
-    </div>
-  );
-}
-
-function CaptainPanel({ status, suggested, lastUpdatedAt }: { status: Status | undefined; suggested: SuggestedAction[]; lastUpdatedAt?: Date }) {
-  const player = status?.player;
-  const outpost = status?.outpost;
-  const pilot = player?.display_name ?? player?.displayName ?? player?.name ?? player?.id ?? 'Unknown pilot';
-  const outpostName = outpost?.name ?? outpost?.id ?? 'Local outpost';
-
-  return (
-    <section className="panel captain-panel" aria-label="Pilot status">
-      <PanelTitle kicker="Pilot" title={String(pilot)} />
-      <p className="big-stat">{outpostName}</p>
-      <p className="muted">Last refresh: {lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : 'waiting for telemetry'}</p>
-      <div className="suggestions">
-        {suggested.length > 0 ? (
-          suggested.slice(0, 3).map((item, index) => <Suggestion key={index} value={item} />)
-        ) : (
-          <span className="chip">Keep the miners busy.</span>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function Suggestion({ value }: { value: SuggestedAction }) {
-  if (value.message) {
-    return <span className="chip">{value.message}</span>;
-  }
-  return <span className="chip">Explore the API for the next step.</span>;
-}
-
-function ActionPanel({
-  active,
-  disabled,
-  selectedDirection,
-  onDirectionChange,
-  onScan,
-}: {
-  active: Action[];
-  disabled: boolean;
-  selectedDirection: (typeof scanDirections)[number];
-  onDirectionChange: (direction: (typeof scanDirections)[number]) => void;
-  onScan: () => void;
-}) {
-  return (
-    <section className="panel action-panel" aria-label="Scans and actions">
-      <PanelTitle kicker="Bridge" title="Scans" />
-      <div className="scan-controls">
-        <select value={selectedDirection} onChange={(event) => onDirectionChange(event.target.value as (typeof scanDirections)[number])}>
-          {scanDirections.map((direction) => (
-            <option key={direction} value={direction}>
-              {direction}
-            </option>
-          ))}
-        </select>
-        <button disabled={disabled} onClick={onScan} type="button">
-          Start scan
-        </button>
-      </div>
-      {active.length > 0 ? (
-        <div className="action-list">
-          {active.map((action) => (
-            <ActionCard action={action} key={action.id} />
-          ))}
-        </div>
-      ) : (
-        <p className="muted">No active actions. Start a scan to reveal another asteroid site.</p>
-      )}
-    </section>
-  );
-}
-
-function ActionCard({ action }: { action: Action }) {
-  const resolvesAt = actionResolvesAt(action);
-  return (
-    <article className="mini-card">
-      <strong>{action.type ?? 'action'}</strong>
-      <span>{actionDirection(action) ?? 'unknown direction'}</span>
-      <span>{secondsUntil(resolvesAt)}s remaining</span>
-    </article>
-  );
-}
-
-function SectorMap({
-  sites,
-  miners,
-  resources,
-  sectorName,
-  selectedSites,
-  onSelectSite,
-  onAssign,
-}: {
-  sites: Site[];
-  miners: Miner[];
-  resources: Resources | undefined;
-  sectorName: string;
-  selectedSites: Record<string, string>;
-  onSelectSite: (minerID: string, siteID: string) => void;
-  onAssign: (minerID: string) => void;
-}) {
-  const cells = mapCells(sites);
-  return (
-    <section className="panel sector-panel" aria-label="Sector map">
-      <PanelTitle kicker="Map" title={sectorName} />
-      <div className="map-grid" style={{ gridTemplateColumns: `repeat(${cells.columns}, minmax(110px, 1fr))` }}>
-        {cells.cells.map((cell) =>
-          cell.site ? (
-            <SiteCard
-              key={`${cell.x}:${cell.y}`}
-              miners={miners}
-              resources={resources}
-              onAssign={onAssign}
-              onSelectSite={onSelectSite}
-              selectedSites={selectedSites}
-              site={cell.site}
-            />
-          ) : (
-            <div className="space-cell" key={`${cell.x}:${cell.y}`}>
-              <span>Unexplored</span>
-              <small>
-                {cell.x}, {cell.y}
-              </small>
-            </div>
-          ),
-        )}
-      </div>
-    </section>
-  );
-}
-
-function SiteCard({
-  site,
-  miners,
-  resources,
-  selectedSites,
-  onSelectSite,
-  onAssign,
-}: {
-  site: Site;
-  miners: Miner[];
-  resources: Resources | undefined;
-  selectedSites: Record<string, string>;
-  onSelectSite: (minerID: string, siteID: string) => void;
-  onAssign: (minerID: string) => void;
-}) {
-  const assignedMiner = minerByID(miners, assignedMinerID(site));
-  const idle = idleMiners(miners);
-  const selectedMinerID = Object.entries(selectedSites).find(([minerID, siteID]) => siteID === site.id && Boolean(minerID))?.[0] ?? '';
-  const selectedMiner = minerByID(idle, selectedMinerID);
-  return (
-    <article className={assignedMiner ? 'site-card site-card-active' : 'site-card'}>
-      <div className="planet-mark" />
-      <strong>{site.name ?? site.id}</strong>
-      <span className="muted">{site.id}</span>
-      <dl>
-        <div>
-          <dt>Position</dt>
-          <dd>
-            {site.x ?? 0}, {site.y ?? 0}
-          </dd>
-        </div>
-        <div>
-          <dt>Richness</dt>
-          <dd>{site.richness ?? 0}</dd>
-        </div>
-        <div>
-          <dt>Base ore</dt>
-          <dd>{formatRate(siteRate(site))}</dd>
-        </div>
-        <div>
-          <dt>Miner</dt>
-          <dd>{assignedMiner?.name ?? assignedMiner?.id ?? 'unassigned'}</dd>
-        </div>
-      </dl>
-      {!assignedMiner && idle.length > 0 ? (
-        <label className="inline-select">
-          <span>Assign idle miner</span>
-          <select value={selectedMinerID} onChange={(event) => onSelectSite(event.target.value, site.id)}>
-            <option value="">Choose miner</option>
-            {idle.map((miner) => (
-              <option key={miner.id} value={miner.id}>
-                {miner.name ?? miner.id}
-              </option>
-            ))}
-          </select>
-          <button
-            disabled={!selectedMiner || !canAssignMiner(resources, selectedMiner)}
-            onClick={() => onAssign(selectedMinerID)}
-            title={selectedMiner && !canAssignMiner(resources, selectedMiner) ? 'Need more energy capacity.' : undefined}
-            type="button"
-          >
-            Assign here
-          </button>
-        </label>
-      ) : null}
-    </article>
-  );
-}
-
-function FleetPanel({
-  miners,
-  sites,
-  resources,
-  assignSelections,
-  mutating,
-  canBuildMiner,
-  buildCost: minerBuildCost,
-  onBuild,
-  onUpgrade,
-  onAssign,
-  onSelectSite,
-}: {
-  miners: Miner[];
-  sites: Site[];
-  resources: Resources | undefined;
-  assignSelections: Record<string, string>;
-  mutating?: string;
-  canBuildMiner: boolean;
-  buildCost?: { ore?: number };
-  onBuild: () => void;
-  onUpgrade: (minerID: string) => void;
-  onAssign: (minerID: string) => void;
-  onSelectSite: (minerID: string, siteID: string) => void;
-}) {
-  return (
-    <section className="panel fleet-panel" aria-label="Miner fleet">
-      <div className="panel-heading-row">
-        <PanelTitle kicker="Fleet" title="Miners" />
-        <button disabled={!canBuildMiner || mutating === 'build'} onClick={onBuild} title={canBuildMiner ? undefined : 'Need more ore.'} type="button">
-          Build miner
-        </button>
-      </div>
-      <p className="muted">Build cost: {formatCost(minerBuildCost)}</p>
-      <div className="miner-list">
-        {miners.map((miner) => (
-          <MinerCard
-            assignSelection={assignSelections[miner.id] ?? assignedSiteID(miner) ?? ''}
-            key={miner.id}
-            miner={miner}
-            mutating={mutating}
-            onAssign={onAssign}
-            onSelectSite={onSelectSite}
-            onUpgrade={onUpgrade}
-            resources={resources}
-            sites={sites}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function MinerCard({
-  miner,
-  sites,
-  resources,
-  assignSelection,
-  mutating,
-  onUpgrade,
-  onAssign,
-  onSelectSite,
-}: {
-  miner: Miner;
-  sites: Site[];
-  resources: Resources | undefined;
-  assignSelection: string;
-  mutating?: string;
-  onUpgrade: (minerID: string) => void;
-  onAssign: (minerID: string) => void;
-  onSelectSite: (minerID: string, siteID: string) => void;
-}) {
-  const currentSite = siteByID(sites, assignedSiteID(miner));
-  const targetSites = availableSites(sites, miner.id);
-  const cost = upgradeCost(miner);
-  const canUpgrade = canAfford(resources, cost);
-  const assigning = mutating === `assign-${miner.id}`;
-  const upgrading = mutating === `upgrade-${miner.id}`;
-
-  return (
-    <article className="miner-card">
-      <div className="miner-avatar" />
-      <div>
-        <h3>{miner.name ?? miner.id}</h3>
-        <p className="muted">{miner.id}</p>
-      </div>
-      <dl>
-        <div>
-          <dt>Level</dt>
-          <dd>{miner.level ?? 1}</dd>
-        </div>
-        <div>
-          <dt>Status</dt>
-          <dd>{miner.status ?? 'ready'}</dd>
-        </div>
-        <div>
-          <dt>Ore rate</dt>
-          <dd>{formatRate(minerRate(miner))}</dd>
-        </div>
-        <div>
-          <dt>Energy required</dt>
-          <dd>{minerEnergyRequirement(miner)}</dd>
-        </div>
-        <div>
-          <dt>Assigned</dt>
-          <dd>{currentSite?.name ?? assignedSiteID(miner) ?? 'none'}</dd>
-        </div>
-      </dl>
-      <div className="miner-actions">
-        <button disabled={!canUpgrade || upgrading} onClick={() => onUpgrade(miner.id)} title={canUpgrade ? undefined : 'Need more ore.'} type="button">
-          Upgrade
-        </button>
-        <span className="muted">{formatCost(cost)}</span>
-      </div>
-      <div className="assign-row">
-        <select value={assignSelection} onChange={(event) => onSelectSite(miner.id, event.target.value)}>
-          <option value="">Choose site</option>
-          {targetSites.map((site) => (
-            <option key={site.id} value={site.id}>
-              {site.name ?? site.id}
-            </option>
-          ))}
-        </select>
-        <button
-          disabled={!assignSelection || assigning || !canAssignMiner(resources, miner)}
-          onClick={() => onAssign(miner.id)}
-          title={canAssignMiner(resources, miner) ? undefined : 'Need more energy capacity.'}
-          type="button"
-        >
-          Assign
-        </button>
-      </div>
-    </article>
-  );
-}
-
-function LogPanel({ entries }: { entries: LogEntry[] }) {
-  return (
-    <section className="panel log-panel" aria-label="Activity log">
-      <PanelTitle kicker="Captain's log" title="Recent activity" />
-      {entries.length > 0 ? (
-        <ol>
-          {entries
-            .slice()
-            .reverse()
-            .slice(0, 8)
-            .map((entry) => (
-              <li key={entry.id}>
-                <span>{formatDateTime(entry.created_at ?? entry.createdAt)}</span>
-                <strong>{entry.message ?? entry.id}</strong>
-              </li>
-            ))}
-        </ol>
-      ) : (
-        <p className="muted">No log entries yet.</p>
-      )}
-    </section>
-  );
-}
-
-function GuidePanel({ hasAnySite, idleMiners: idle, scan }: { hasAnySite: boolean; idleMiners: Miner[]; scan?: Action }) {
-  return (
-    <section className="panel guide-panel" aria-label="Beginner guide">
-      <PanelTitle kicker="Flight manual" title="What to try next" />
-      <ul>
-        {!hasAnySite ? <li>Start a scan and wait for a discovered asteroid site.</li> : null}
-        {scan ? <li>Let the active scan finish. The map updates automatically.</li> : null}
-        {idle.length > 0 ? <li>Assign idle miners to unclaimed asteroid sites.</li> : null}
-        <li>Open the CLI or source files to see how this GUI calls the same API.</li>
-      </ul>
-    </section>
-  );
-}
-
-function PanelTitle({ kicker, title }: { kicker: string; title: string }) {
-  return (
-    <div className="panel-title">
-      <p className="eyebrow">{kicker}</p>
-      <h2>{title}</h2>
-    </div>
-  );
-}
-
-function mapCells(sites: Site[]): { columns: number; cells: Array<{ x: number; y: number; site?: Site }> } {
-  const coordinates = sites.map((site) => ({ x: typeof site.x === 'number' ? site.x : 0, y: typeof site.y === 'number' ? site.y : 0 }));
-  coordinates.push({ x: 0, y: 0 });
-  const minX = Math.min(...coordinates.map((point) => point.x), -1);
-  const maxX = Math.max(...coordinates.map((point) => point.x), 1);
-  const minY = Math.min(...coordinates.map((point) => point.y), -1);
-  const maxY = Math.max(...coordinates.map((point) => point.y), 1);
-  const byCoordinate = new Map<string, Site>();
-  for (const site of sites) {
-    const x = typeof site.x === 'number' ? site.x : 0;
-    const y = typeof site.y === 'number' ? site.y : 0;
-    byCoordinate.set(`${x}:${y}`, site);
-  }
-
-  const cells: Array<{ x: number; y: number; site?: Site }> = [];
-  for (let y = maxY; y >= minY; y -= 1) {
-    for (let x = minX; x <= maxX; x += 1) {
-      cells.push({ x, y, site: byCoordinate.get(`${x}:${y}`) });
-    }
-  }
-
-  return { columns: maxX - minX + 1, cells };
-}
-
-function reconcileAssignSelections(current: Record<string, string>, nextMiners: Miner[], sites: Site[]): Record<string, string> {
+function reconcileAssignSelections(current: Record<string, string>, nextMiners: Miner[], nextSector: Sector | undefined): Record<string, string> {
   const next: Record<string, string> = {};
-  const siteIDs = new Set(sites.map((site) => site.id));
+  const siteIDs = new Set(allSites(nextSector).map((site) => site.id));
   for (const miner of nextMiners) {
     const selected = current[miner.id] ?? assignedSiteID(miner) ?? '';
     if (selected && siteIDs.has(selected)) {

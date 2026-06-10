@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"strings"
@@ -30,6 +31,11 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/me", s.withAuth(s.me))
 	mux.HandleFunc("GET /v1/status", s.withAuth(s.status))
 	mux.HandleFunc("GET /v1/sector", s.withAuth(s.sector))
+	mux.HandleFunc("GET /v1/leaderboard", s.withAuth(s.leaderboard))
+	mux.HandleFunc("GET /v1/conversions", s.withAuth(s.conversions))
+	mux.HandleFunc("POST /v1/conversions/{resource}", s.withAuth(s.convert))
+	mux.HandleFunc("POST /v1/nodes/{id}/claim", s.withAuth(s.claimNode))
+	mux.HandleFunc("POST /v1/crusher/upgrade", s.withAuth(s.upgradeCrusher))
 	mux.HandleFunc("GET /v1/miners", s.withAuth(s.miners))
 	mux.HandleFunc("POST /v1/miners", s.withAuth(s.buildMiner))
 	mux.HandleFunc("POST /v1/miners/{id}/upgrade", s.withAuth(s.upgradeMiner))
@@ -71,6 +77,63 @@ func (s *Server) status(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) sector(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, s.store.Sector())
+}
+
+func (s *Server) leaderboard(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, s.store.Leaderboard())
+}
+
+func (s *Server) conversions(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, s.store.ConversionsInfo())
+}
+
+type convertRequest struct {
+	Amount *float64 `json:"amount"`
+}
+
+func (s *Server) convert(w http.ResponseWriter, r *http.Request) {
+	var req convertRequest
+	if r.Body != nil && r.ContentLength != 0 {
+		if err := decodeJSON(r, &req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_json", "Request body must be valid JSON.", map[string]any{})
+			return
+		}
+	}
+	var amount *int
+	if req.Amount != nil {
+		if *req.Amount != math.Trunc(*req.Amount) {
+			writeError(w, http.StatusBadRequest, "invalid_amount", "Conversion amount must be a whole number of at least 1.", map[string]any{
+				"amount": *req.Amount,
+			})
+			return
+		}
+		value := int(*req.Amount)
+		amount = &value
+	}
+	result, err := s.store.Convert(r.PathValue("resource"), amount, r.Header.Get("Idempotency-Key"))
+	if err != nil {
+		writeGameError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) claimNode(w http.ResponseWriter, r *http.Request) {
+	node, err := s.store.ClaimNode(r.PathValue("id"), r.Header.Get("Idempotency-Key"))
+	if err != nil {
+		writeGameError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, node)
+}
+
+func (s *Server) upgradeCrusher(w http.ResponseWriter, _ *http.Request) {
+	crusher, err := s.store.UpgradeCrusher()
+	if err != nil {
+		writeGameError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, crusher)
 }
 
 func (s *Server) miners(w http.ResponseWriter, _ *http.Request) {
@@ -222,9 +285,10 @@ func writeGameError(w http.ResponseWriter, err error) {
 	switch gameErr.Code {
 	case "not_found":
 		status = http.StatusNotFound
-	case "insufficient_resources", "energy_capacity_exceeded", "site_occupied", "active_scan_exists", "idempotency_conflict":
+	case "insufficient_resources", "energy_capacity_exceeded", "site_occupied", "active_scan_exists",
+		"idempotency_conflict", "node_already_claimed", "node_not_claimed", "crusher_level_too_low":
 		status = http.StatusConflict
-	case "invalid_direction", "site_unavailable", "max_level":
+	case "invalid_direction", "site_unavailable", "max_level", "invalid_resource", "invalid_amount":
 		status = http.StatusBadRequest
 	}
 	writeError(w, status, gameErr.Code, gameErr.Message, gameErr.Details)

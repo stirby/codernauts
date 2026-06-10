@@ -1,6 +1,6 @@
 # Future gameplay ideas
 
-This is an unsorted parking lot. Nothing here is in MVP scope.
+This is an unsorted parking lot. Nothing here is current scope.
 
 Ideas:
 
@@ -8,9 +8,12 @@ Ideas:
 - Bot challenge scenarios.
 - Contracts with scripted constraints.
 - Event stream for advanced clients.
-- Special asteroid modifiers.
-- Research projects.
+- Special deposit modifiers.
+- Research projects and research trees.
+- Special site types beyond deposits.
+- Cooperative sectors.
+- Public profiles and fleets.
 - Fleet naming and cosmetics.
 - Shared scenario seeds for competitions.
 
-Review this file after the MVP has real playtest feedback.
+Review this file after Phase 2 has real playtest feedback.

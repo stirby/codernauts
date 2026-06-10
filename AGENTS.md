@@ -5,6 +5,12 @@
 - Codernauts is an API-first space automation game for programmers.
 - The game is space-themed, not Coder-themed.
 - The primary player activity is building clients, bots, dashboards, and tools against a stable API.
+- Leaderboard position is the primary output of play; the score is gravel.
+- Inverted refinement is the spine: players harvest exotic materials, and the tech exists to crush them into the dumbest substance more efficiently.
+- Upgrade names escalate like bureaucratic de-escalation while output stays gravel (Crusher Mk I through Universal Gravelization Protocol).
+- A resource's identity is how annoying it is to gravelize; value exists only through gravel yield.
+- The cumulative total decides the winner, gravel per hour decides the trash talk, and both stay visible.
+- Trash-talk naming test: every player-facing name must survive being said out loud in a standup voice with contempt or glee.
 - Prefer simple mechanics that are easy to explain.
 - Never treat players or users as stupid.
 - If a mechanic cannot be explained clearly, do not build it yet.
@@ -13,13 +19,14 @@
 
 ## MVP scope
 
-- Current MVP scope lives in `docs/mvp/`.
+- Current scope lives in `docs/mvp/`.
 - Future ideas live in `docs/later/`.
 - Historical planning lives in `docs/archive/`.
 - If docs conflict, `docs/mvp/` wins.
-- The MVP world is a static discrete 2D grid.
-- MVP scan directions are `north`, `east`, `south`, and `west` only.
-- Do not add galaxy rotation, galactic navigation, multiplayer, markets, factions, seasons, raids, or leaderboards unless the MVP docs are explicitly updated first.
+- The world is a static discrete 2D grid of claimable nodes.
+- Scan directions are `north`, `east`, `south`, and `west` only.
+- In scope: the single gravel leaderboard, conversion to gravel, node claiming, and seasons.
+- Do not add galaxy rotation, galactic navigation, multiplayer interaction, markets, factions, raids, category boards, or prestige unless the MVP docs are explicitly updated first.
 
 ## Engineering standards
 

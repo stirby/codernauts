@@ -18,8 +18,14 @@ export async function runBot(options: BotRunnerOptions = {}): Promise<void> {
   console.log(`Reason: ${decision.reason}`);
 
   switch (decision.kind) {
+    case 'claim-node':
+      printJson(await client.claimNode(decision.nodeId, `bot-claim-${decision.nodeId}-${Date.now()}`));
+      return;
     case 'assign-miner':
       printJson(await client.assignMiner(decision.minerId, decision.siteId));
+      return;
+    case 'upgrade-crusher':
+      printJson(await client.upgradeCrusher());
       return;
     case 'build-miner':
       printJson(await client.buildMiner());
@@ -28,7 +34,10 @@ export async function runBot(options: BotRunnerOptions = {}): Promise<void> {
       printJson(await client.upgradeMiner(decision.minerId));
       return;
     case 'scan':
-      printJson(await client.scan('north', `bot-scan-${Date.now()}`));
+      printJson(await client.scan(decision.direction, `bot-scan-${decision.direction}-${Date.now()}`));
+      return;
+    case 'convert':
+      printJson(await client.convert(decision.resource, decision.amount, `bot-convert-${decision.resource}-${Date.now()}`));
       return;
     case 'wait':
       console.log('No API write was needed this turn.');

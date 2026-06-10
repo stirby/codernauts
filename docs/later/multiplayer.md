@@ -1,18 +1,18 @@
 # Multiplayer ideas
 
-Multiplayer is not part of the MVP. The current game should work as a private single-player API loop first.
+Multiplayer interaction is not in current scope. The leaderboard is already multiplayer-shaped, but each player runs an isolated world today.
 
-Possible later directions:
+## Territorial endgame
 
-- Shared world map.
-- Player-visible claims or territories.
-- Cooperative sectors.
-- Competitive resource races.
-- Public profiles and fleets.
-- Conflict or hazards.
+The long-term competitive direction:
 
-Before adding multiplayer, answer:
+- A shared map where claims are exclusive and visible.
+- Rapid expansion races for the rich outer rings.
+- Unions: temporary alliances for claiming and defense.
+- Eliminating players and taking their raw resources. Raw balances transfer; earned gravel never does.
 
-1. Is the single-player API loop fun enough?
+## Before any of it
+
+1. Is the single-player gravel loop fun enough?
 2. Can the server handle many polling clients cheaply?
-3. What player interactions improve the programming-game fantasy instead of distracting from it?
+3. Which interactions improve the programming-game fantasy instead of distracting from it?

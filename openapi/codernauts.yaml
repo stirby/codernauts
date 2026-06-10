@@ -1,10 +1,10 @@
 openapi: 3.1.0
 info:
   title: Codernauts API
-  version: 0.1.0
-  summary: API-first space automation game MVP
+  version: 0.2.0
+  summary: API-first space automation game prototype
   description: |
-    Codernauts is an API-first programming game. The local MVP lets a player inspect state, scan nearby space, and automate persistent miners that generate resources over time.
+    Codernauts is an API-first programming game. The local prototype lets a player scan for nodes, claim them, automate persistent miners across multiple resources, crush resources into gravel, and climb the season gravelboard.
 servers:
   - url: http://localhost:8080
     description: Local prototype
@@ -16,9 +16,15 @@ tags:
   - name: Player
     description: Player identity and current state
   - name: Sector
-    description: Discovered asteroid sites
+    description: Discovered nodes and their deposit sites
+  - name: Nodes
+    description: Claiming discovered nodes
   - name: Miners
     description: Persistent resource-generation objects
+  - name: Crusher
+    description: Gravel conversion rates, crushing, and crusher upgrades
+  - name: Leaderboard
+    description: Season gravel standings
   - name: Actions
     description: Timed work such as scans
   - name: Log
@@ -70,7 +76,7 @@ paths:
     get:
       tags: [Player]
       summary: Get complete state for a simple client
-      description: Returns player, outpost, resources, miners, sector, active actions, and suggested next actions.
+      description: Returns player, outpost, resources, gravel, crusher, sector nodes, miners, active actions, and suggested next actions.
       operationId: getStatus
       responses:
         "200":
@@ -84,17 +90,39 @@ paths:
   /v1/sector:
     get:
       tags: [Sector]
-      summary: List discovered sites in the private sector
+      summary: List discovered nodes in the private sector
       operationId: getSector
       responses:
         "200":
-          description: Known sector sites
+          description: Known sector nodes with their sites
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Sector"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /v1/nodes/{id}/claim:
+    post:
+      tags: [Nodes]
+      summary: Claim a discovered node
+      description: Pays the distance-scaled claim cost and opens the node's sites for miner assignment. The request has no body.
+      operationId: claimNode
+      parameters:
+        - $ref: "#/components/parameters/NodeId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Node was claimed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Node"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/miners:
     get:
       tags: [Miners]
@@ -112,7 +140,7 @@ paths:
     post:
       tags: [Miners]
       summary: Build a miner
-      description: Builds an idle persistent miner. Assign it to a discovered asteroid site to increase ore generation.
+      description: Builds an idle persistent miner. Assign it to an open site on a claimed node to mine that site's resource.
       operationId: buildMiner
       responses:
         "201":
@@ -129,6 +157,7 @@ paths:
     post:
       tags: [Miners]
       summary: Upgrade a miner
+      description: Raises the miner's own rate multiplier and adds energy capacity to the outpost.
       operationId: upgradeMiner
       parameters:
         - $ref: "#/components/parameters/MinerId"
@@ -139,6 +168,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Miner"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -149,6 +180,7 @@ paths:
     post:
       tags: [Miners]
       summary: Assign a miner to a site
+      description: Assigns the miner to an open deposit site on a claimed node. Moving a miner between sites does not consume extra energy capacity.
       operationId: assignMiner
       parameters:
         - $ref: "#/components/parameters/MinerId"
@@ -161,10 +193,10 @@ paths:
             examples:
               site_id:
                 value:
-                  site_id: site_ast_001
+                  site_id: site_home_anchor
               siteId:
                 value:
-                  siteId: site_ast_001
+                  siteId: site_home_anchor
       responses:
         "200":
           description: Miner assignment was updated
@@ -180,6 +212,89 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+  /v1/conversions:
+    get:
+      tags: [Crusher]
+      summary: List gravel conversion rates
+      description: Returns the crusher state and the server-owned conversion rate table, including which resources the current crusher level accepts.
+      operationId: listConversions
+      responses:
+        "200":
+          description: Crusher state and conversion rates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversionsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/conversions/{resource}:
+    post:
+      tags: [Crusher]
+      summary: Crush a resource into gravel
+      description: Converts whole units of one resource into gravel at the server rate times the crusher yield. Omit the body or the amount to crush the full balance.
+      operationId: convertResource
+      parameters:
+        - $ref: "#/components/parameters/ConvertResource"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConvertRequest"
+            examples:
+              partial:
+                value:
+                  amount: 100
+              full_balance:
+                value: {}
+      responses:
+        "200":
+          description: Conversion result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversionResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/crusher/upgrade:
+    post:
+      tags: [Crusher]
+      summary: Upgrade the crusher
+      description: Pays the next tier cost, raises the gravel yield multiplier, and unlocks the next resource. The request has no body.
+      operationId: upgradeCrusher
+      responses:
+        "200":
+          description: Crusher was upgraded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Crusher"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/leaderboard:
+    get:
+      tags: [Leaderboard]
+      summary: Get the season gravelboard
+      description: Returns the current season and ranked entries. Total season gravel is the only ranking metric; gravel per hour is a display stat.
+      operationId: getLeaderboard
+      responses:
+        "200":
+          description: Season standings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaderboardResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /v1/actions:
     get:
       tags: [Actions]
@@ -216,7 +331,7 @@ paths:
     post:
       tags: [Actions]
       summary: Start a scan action
-      description: Starts a 30 second scan that lazily reveals one asteroid site when completed.
+      description: Starts a scan that lazily reveals the next node out in one direction when completed. Duration is 15 seconds at distance 1 plus 20 seconds per additional distance.
       operationId: startScan
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -268,7 +383,7 @@ components:
       name: Idempotency-Key
       in: header
       required: false
-      description: User-generated key for safe scan retries.
+      description: User-generated key for safe retries of scans, claims, and conversions.
       schema:
         type: string
         minLength: 1
@@ -280,6 +395,13 @@ components:
       schema:
         type: string
         example: min_starter
+    NodeId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: node_north_1
     ActionId:
       name: id
       in: path
@@ -287,6 +409,14 @@ components:
       schema:
         type: string
         example: act_scan_001
+    ConvertResource:
+      name: resource
+      in: path
+      required: true
+      description: Resource to crush.
+      schema:
+        type: string
+        enum: [ore, ice, gas, crystal]
   responses:
     BadRequest:
       description: Request was invalid
@@ -329,9 +459,24 @@ components:
       properties:
         player:
           $ref: "#/components/schemas/Player"
+    Location:
+      type: object
+      required: [node_id, node_name, x, y]
+      description: Fixed position of the codernaut. Movement is out of scope for this prototype.
+      properties:
+        node_id:
+          type: string
+          example: node_home
+        node_name:
+          type: string
+          example: Vesta-41
+        x:
+          type: integer
+        y:
+          type: integer
     Player:
       type: object
-      required: [id, display_name, created_at]
+      required: [id, display_name, created_at, location]
       properties:
         id:
           type: string
@@ -342,9 +487,11 @@ components:
         created_at:
           type: string
           format: date-time
+        location:
+          $ref: "#/components/schemas/Location"
     Outpost:
       type: object
-      required: [id, name]
+      required: [id, name, node_id]
       properties:
         id:
           type: string
@@ -352,18 +499,36 @@ components:
         name:
           type: string
           example: Vesta-41
+        node_id:
+          type: string
+          example: node_home
     Resources:
       type: object
-      required: [ore, max_ore, energy, max_energy, energy_capacity, energy_used, energy_available, ore_rate_per_second, last_generated_at]
+      required: [ore, ice, gas, crystal, rates_per_second, energy, max_energy, energy_capacity, energy_used, energy_available, ore_rate_per_second, last_generated_at]
+      description: Balances are uncapped. Energy is fixed assignment capacity, not a regenerating resource.
       properties:
         ore:
           type: integer
           minimum: 0
-          description: Spendable ore balance.
-        max_ore:
+        ice:
           type: integer
-          minimum: 1
-          description: Ore storage cap.
+          minimum: 0
+        gas:
+          type: integer
+          minimum: 0
+        crystal:
+          type: integer
+          minimum: 0
+        rates_per_second:
+          type: object
+          description: Current production per second for each resource.
+          additionalProperties:
+            type: number
+            minimum: 0
+        ore_rate_per_second:
+          type: number
+          minimum: 0
+          description: Legacy alias for rates_per_second.ore.
         energy:
           type: integer
           minimum: 0
@@ -375,7 +540,7 @@ components:
         energy_capacity:
           type: integer
           minimum: 1
-          description: Total miner assignment capacity.
+          description: Total miner assignment capacity. Miner upgrades raise it.
         energy_used:
           type: integer
           minimum: 0
@@ -384,22 +549,180 @@ components:
           type: integer
           minimum: 0
           description: Remaining capacity available for miner assignments.
-        ore_rate_per_second:
-          type: number
-          minimum: 0
         last_generated_at:
           type: string
           format: date-time
     Cost:
       type: object
-      required: [ore]
+      description: Multi-resource price. Zero-valued resources are omitted.
       properties:
         ore:
           type: integer
           minimum: 0
+        ice:
+          type: integer
+          minimum: 0
+        gas:
+          type: integer
+          minimum: 0
+        crystal:
+          type: integer
+          minimum: 0
+    Season:
+      type: object
+      required: [id, name, started_at]
+      properties:
+        id:
+          type: string
+          example: season_1781071291
+        name:
+          type: string
+          example: The Aggregate Era
+        started_at:
+          type: string
+          format: date-time
+    Gravel:
+      type: object
+      required: [total, per_hour, season]
+      description: Season score. Gravel is cumulative and never spendable.
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        per_hour:
+          type: number
+          minimum: 0
+          description: Gravel earned over a sliding window of up to one hour.
+        season:
+          $ref: "#/components/schemas/Season"
+    CrusherUpgrade:
+      type: object
+      required: [level, name, yield_multiplier, cost]
+      properties:
+        level:
+          type: integer
+          minimum: 2
+        name:
+          type: string
+          example: Crusher Mk II
+        yield_multiplier:
+          type: number
+          example: 1.25
+        unlocks_resource:
+          type: string
+          example: gas
+        cost:
+          $ref: "#/components/schemas/Cost"
+    Crusher:
+      type: object
+      required: [level, name, yield_multiplier, unlocked_resources]
+      properties:
+        level:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          example: Crusher Mk I
+        yield_multiplier:
+          type: number
+          example: 1.0
+        unlocked_resources:
+          type: array
+          items:
+            type: string
+        next_upgrade:
+          $ref: "#/components/schemas/CrusherUpgrade"
+    ConversionRate:
+      type: object
+      required: [resource, gravel_per_unit, required_crusher_level, unlocked]
+      properties:
+        resource:
+          type: string
+          example: ore
+        gravel_per_unit:
+          type: integer
+          minimum: 1
+        required_crusher_level:
+          type: integer
+          minimum: 1
+        unlocked:
+          type: boolean
+    ConversionsResponse:
+      type: object
+      required: [crusher, rates]
+      properties:
+        crusher:
+          $ref: "#/components/schemas/Crusher"
+        rates:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversionRate"
+    ConvertRequest:
+      type: object
+      properties:
+        amount:
+          type: integer
+          minimum: 1
+          description: Whole units to crush. Omit to crush the full balance.
+    ConversionResult:
+      type: object
+      required: [resource, amount_converted, gravel_per_unit, yield_multiplier, gravel_earned, gravel_total, resources]
+      properties:
+        resource:
+          type: string
+          example: ore
+        amount_converted:
+          type: integer
+          minimum: 1
+        gravel_per_unit:
+          type: integer
+          minimum: 1
+        yield_multiplier:
+          type: number
+          example: 1.0
+        gravel_earned:
+          type: integer
+          minimum: 0
+          description: floor(amount times rate times yield).
+        gravel_total:
+          type: integer
+          minimum: 0
+        resources:
+          $ref: "#/components/schemas/Resources"
+    LeaderboardEntry:
+      type: object
+      required: [rank, player_id, codernaut, gravel, gravel_per_hour, is_you]
+      properties:
+        rank:
+          type: integer
+          minimum: 1
+        player_id:
+          type: string
+          example: ply_dev
+        codernaut:
+          type: string
+          example: Astronaut Vega-7
+        gravel:
+          type: integer
+          minimum: 0
+        gravel_per_hour:
+          type: number
+          minimum: 0
+        is_you:
+          type: boolean
+    LeaderboardResponse:
+      type: object
+      required: [season, entries]
+      properties:
+        season:
+          $ref: "#/components/schemas/Season"
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeaderboardEntry"
     Miner:
       type: object
-      required: [id, name, level, ore_rate_per_second, energy_requirement, status, build_cost, created_at]
+      required: [id, name, level, rate_per_second, ore_rate_per_second, energy_requirement, status, build_cost, created_at]
       properties:
         id:
           type: string
@@ -410,16 +733,25 @@ components:
         level:
           type: integer
           minimum: 1
+        rate_per_second:
+          type: number
+          minimum: 0
+          description: Miner multiplier. Production is this times the site base rate.
         ore_rate_per_second:
           type: number
           minimum: 0
+          description: Legacy alias for rate_per_second.
+        resource:
+          type: string
+          example: ore
+          description: Resource mined at the assigned site. Omitted while idle.
         energy_requirement:
           type: integer
           minimum: 0
           description: Energy capacity reserved while this miner is assigned.
         assigned_site_id:
           type: string
-          example: site_home_asteroid
+          example: site_home_anchor
         assigned_site_name:
           type: string
           example: Anchor Rock
@@ -452,26 +784,32 @@ components:
       properties:
         site_id:
           type: string
-          example: site_ast_001
+          example: site_home_anchor
         siteId:
           type: string
-          example: site_ast_001
+          example: site_home_anchor
       anyOf:
         - required: [site_id]
         - required: [siteId]
     Site:
       type: object
-      required: [id, name, kind, x, y, richness, discovered_at, depleted, base_ore_rate_per_second]
+      required: [id, node_id, name, kind, resource, x, y, richness, base_rate_per_second, discovered_at, depleted]
       properties:
         id:
           type: string
-          example: site_home_asteroid
+          example: site_home_anchor
+        node_id:
+          type: string
+          example: node_home
         name:
           type: string
           example: Anchor Rock
         kind:
           type: string
-          example: asteroid
+          enum: [deposit]
+        resource:
+          type: string
+          example: ore
         x:
           type: integer
         y:
@@ -479,6 +817,9 @@ components:
         richness:
           type: integer
           minimum: 1
+        base_rate_per_second:
+          type: number
+          minimum: 0
         assigned_miner_id:
           type: string
           example: min_starter
@@ -487,12 +828,47 @@ components:
           format: date-time
         depleted:
           type: boolean
-        base_ore_rate_per_second:
-          type: number
+    Node:
+      type: object
+      required: [id, name, kind, trait, x, y, distance, discovered_at, sites]
+      properties:
+        id:
+          type: string
+          example: node_north_1
+        name:
+          type: string
+          example: Rustbelt
+        kind:
+          type: string
+          enum: [planet, asteroid_field]
+        trait:
+          type: string
+          enum: [metallic, frozen, volatile, crystalline]
+        x:
+          type: integer
+        y:
+          type: integer
+        distance:
+          type: integer
           minimum: 0
+          description: Grid distance from the home node.
+        discovered_at:
+          type: string
+          format: date-time
+        claimed_by:
+          type: string
+          example: ply_dev
+          description: Omitted while the node is unclaimed.
+        claim_cost:
+          $ref: "#/components/schemas/Cost"
+          description: Present only on unclaimed nodes.
+        sites:
+          type: array
+          items:
+            $ref: "#/components/schemas/Site"
     Sector:
       type: object
-      required: [id, name, sites]
+      required: [id, name, nodes]
       properties:
         id:
           type: string
@@ -500,10 +876,10 @@ components:
         name:
           type: string
           example: Orion Spur
-        sites:
+        nodes:
           type: array
           items:
-            $ref: "#/components/schemas/Site"
+            $ref: "#/components/schemas/Node"
     Action:
       type: object
       required: [id, type, status, created_at, resolves_at]
@@ -530,9 +906,13 @@ components:
           type: object
           additionalProperties:
             type: string
+          example:
+            direction: north
+            distance: "1"
         result:
           type: object
           additionalProperties: true
+          description: Completed scans include a discovered_node object.
     ActionsResponse:
       type: object
       required: [actions]
@@ -554,11 +934,12 @@ components:
       properties:
         key:
           type: string
+          example: claim_node
         message:
           type: string
     Status:
       type: object
-      required: [player, outpost, resources, sector, miners, active_actions, suggested_next_actions]
+      required: [player, outpost, resources, gravel, crusher, sector, miners, active_actions, suggested_next_actions]
       properties:
         player:
           $ref: "#/components/schemas/Player"
@@ -566,6 +947,10 @@ components:
           $ref: "#/components/schemas/Outpost"
         resources:
           $ref: "#/components/schemas/Resources"
+        gravel:
+          $ref: "#/components/schemas/Gravel"
+        crusher:
+          $ref: "#/components/schemas/Crusher"
         sector:
           $ref: "#/components/schemas/Sector"
         miners:
@@ -615,6 +1000,7 @@ components:
       properties:
         code:
           type: string
+          description: Machine-readable code such as insufficient_resources, energy_capacity_exceeded, site_occupied, active_scan_exists, idempotency_conflict, node_already_claimed, node_not_claimed, crusher_level_too_low, invalid_direction, site_unavailable, max_level, invalid_resource, invalid_amount, or not_found.
           example: insufficient_resources
         message:
           type: string

@@ -1,6 +1,6 @@
 # Codernauts TypeScript client starter
 
-This folder is a small starter kit for exploring the Codernauts API. It is written for beginners and uses space automation words like miners, sectors, scans, sites, ore, and logs.
+This folder is a small starter kit for exploring the Codernauts API. It is written for beginners and uses space automation words like miners, nodes, sites, scans, gravel, and logs.
 
 ## What you need
 
@@ -27,9 +27,16 @@ You can override them with environment variables or by copying `.env.example` to
 cp .env.example .env
 ```
 
+## The gravel loop
+
+1. Collect: assigned miners generate ore, ice, gas, and crystal on their own.
+2. Expand: scan for new nodes, then claim them to open their mining sites.
+3. Crush: convert spare resources into gravel at the outpost crusher.
+4. Climb: the season gravelboard ranks codernauts by total gravel.
+
 ## Web console
 
-The web console is the friendliest way to see the local game state. It shows ore, energy capacity, the sector map, active scans, miners, assignments, and recent log entries. It also refreshes automatically.
+The web console is the friendliest way to see the local game state. It shows the gravelboard, resources, the crusher, the node map with your location, miners, assignments, scans, and recent log entries. It refreshes automatically.
 
 Start the API server from the repository root in one terminal:
 
@@ -57,11 +64,17 @@ Run commands with `pnpm cli <command>`.
 
 ```sh
 pnpm cli status
+pnpm cli leaderboard
+pnpm cli conversions
+pnpm cli convert ore 100
+pnpm cli claim node_east_1
+pnpm cli nodes
 pnpm cli miners
 pnpm cli sector
 pnpm cli scan north
 pnpm cli build-miner
 pnpm cli upgrade-miner <minerId>
+pnpm cli upgrade-crusher
 pnpm cli assign-miner <minerId> <siteId>
 pnpm cli actions
 pnpm cli action <actionId>
@@ -72,13 +85,19 @@ pnpm bot
 
 ### What the commands do
 
-- `status`: shows your pilot, ore, energy capacity, active actions, and quick next steps.
-- `miners`: lists your mining drones and their assigned resource sites.
-- `sector`: lists discovered space sites in your current sector.
-- `scan`: asks the API to scan nearby space for more resource sites.
+- `status`: shows your codernaut, location, gravel, crusher, resources, and active actions.
+- `leaderboard`: prints the season gravelboard with rank, gravel, and gravel per hour.
+- `conversions`: lists gravel rates per resource and which ones the crusher accepts.
+- `convert <resource> [amount]`: crushes a resource into gravel; omit the amount to crush everything.
+- `claim <nodeId>`: claims a discovered node so miners can work its sites.
+- `nodes`: lists discovered nodes with traits, distances, claim costs, and sites.
+- `miners`: lists your mining drones, their resources, and assigned sites.
+- `sector`: lists discovered nodes and their sites in your current sector.
+- `scan [direction]`: charts the next node in a direction; farther scans take longer.
 - `build-miner`: builds a persistent mining drone.
 - `upgrade-miner <minerId>`: upgrades one mining drone and increases energy capacity.
-- `assign-miner <minerId> <siteId>`: sends a miner to a discovered site if energy capacity is available.
+- `upgrade-crusher`: upgrades the crusher for better gravel yield and new resources.
+- `assign-miner <minerId> <siteId>`: sends a miner to a site on a claimed node if energy capacity is available.
 - `actions`: lists scan actions.
 - `action <actionId>`: prints one scan action.
 - `log`: prints recent captain's log entries.
@@ -87,16 +106,23 @@ pnpm bot
 
 ## Examples
 
-Scan for sites with an idempotency key so retrying is safe:
+Scan for nodes with an idempotency key so retrying is safe:
 
 ```sh
 pnpm cli scan north --idempotency-key first-scan
 ```
 
-Assign a miner to a site:
+Claim a discovered node and assign a miner to one of its sites:
 
 ```sh
-pnpm cli assign-miner miner_123 site_456
+pnpm cli claim node_east_1
+pnpm cli assign-miner miner_123 site_east_1_a
+```
+
+Crush spare ore into gravel:
+
+```sh
+pnpm cli convert ore
 ```
 
 Call any endpoint directly:
@@ -115,12 +141,14 @@ CODERNAUTS_API_URL=https://example.invalid CODERNAUTS_API_TOKEN=my-token pnpm cl
 ## Project layout
 
 ```text
-src/client.ts   reusable API client
-src/config.ts   environment defaults
-src/cli.ts      command-line interface
-src/bot.ts      simple beginner bot
-src/web/        Vite and React web console
-test/           small tests for safe client behavior
+src/client.ts        reusable API client
+src/config.ts        environment defaults
+src/cli.ts           command-line interface
+src/format.ts        CLI output formatting
+src/bot.ts           simple beginner bot runner
+src/bot-helpers.ts   pure bot decision logic
+src/web/             Vite and React web console
+test/                small tests for safe client behavior
 ```
 
 ## Development checks
@@ -131,13 +159,13 @@ pnpm typecheck
 pnpm web:build
 ```
 
-## Notes for new pilots
+## Notes for new codernauts
 
-Persistent miners generate ore over time after they are assigned to discovered sites. Assigned miners reserve energy capacity. A good early loop is:
+Persistent miners generate resources over time after they are assigned to sites on claimed nodes. Assigned miners reserve energy capacity. Gravel is cumulative and never spent, so crush freely once your next purchase is covered. A good early loop is:
 
 1. Run `pnpm cli status`.
-2. If you have no sites, run `pnpm cli scan north`.
+2. If you have idle miners, run `pnpm cli nodes` to find open sites on claimed nodes.
 3. Run `pnpm cli build-miner` when you have enough ore.
-4. Run `pnpm cli sector` to find a site id.
-5. Run `pnpm cli assign-miner <minerId> <siteId>` when energy capacity is available.
-6. Check `pnpm cli log` to see what happened.
+4. Run `pnpm cli scan north` and claim what you find.
+5. Run `pnpm cli convert ore` once your next purchase is covered.
+6. Check `pnpm cli leaderboard` to watch your gravel climb.

@@ -211,6 +211,48 @@ main() {
       request GET "/v1/actions/${ACTION_ID}"
     fi
   fi
+
+  request GET "/v1/leaderboard"
+  request GET "/v1/conversions"
+  request POST "/v1/conversions/ore" '{"amount":5}' "200 409"
+  if [ "$LAST_STATUS" = "409" ]; then
+    echo "ok   conversion endpoint reached, but this game state has fewer than 5 ore"
+  fi
+  request POST "/v1/crusher/upgrade" "" "200 409"
+  if [ "$LAST_STATUS" = "409" ]; then
+    echo "ok   crusher upgrade endpoint reached, but the next tier is not affordable in this game state"
+  fi
+
+  if [ "$HAVE_JQ" -eq 1 ] && [ -n "${ACTION_ID:-}" ]; then
+    echo "Waiting for scan ${ACTION_ID} to complete so the discovered node can be claimed..."
+    SCAN_STATUS=""
+    i=0
+    while [ "$i" -lt 120 ]; do
+      request GET "/v1/actions/${ACTION_ID}" >/dev/null
+      SCAN_STATUS=$(jq -r '.status // empty' < "$LAST_BODY")
+      if [ "$SCAN_STATUS" = "completed" ]; then
+        break
+      fi
+      i=$((i + 1))
+      sleep 1
+    done
+    if [ "$SCAN_STATUS" = "completed" ]; then
+      DISCOVERED_NODE_ID=$(jq -r '.result.discovered_node.id // empty' < "$LAST_BODY")
+      if [ -n "$DISCOVERED_NODE_ID" ]; then
+        request POST "/v1/nodes/${DISCOVERED_NODE_ID}/claim" "" "200 409"
+        if [ "$LAST_STATUS" = "409" ]; then
+          echo "ok   claim endpoint reached, but ${DISCOVERED_NODE_ID} is not affordable or already claimed in this game state"
+        fi
+      else
+        echo "Scan completed without a discovered node. Skipping the claim check."
+      fi
+    else
+      echo "Scan did not complete in time. Skipping the claim check."
+    fi
+  else
+    echo "Skipping the claim check because jq is unavailable or no scan was started."
+  fi
+
   request GET "/v1/log"
   echo "Smoke test passed"
 }

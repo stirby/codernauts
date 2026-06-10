@@ -1,40 +1,48 @@
 # MVP scope
 
-This folder is the source of truth for the current Codernauts MVP. If a feature is not described here, it is not in scope for the MVP.
+This folder is the source of truth for the current Codernauts scope (Phase 2). If a feature is not described here, it is not in scope.
 
-Codernauts is an API-first space automation game for programmers. Players use a starter project to inspect the API, write small clients or bots, and automate a tiny outpost.
+Codernauts is an API-first space automation game for programmers. Players use a starter project to inspect the API, write small clients or bots, and automate an outpost that crushes everything it mines into gravel, the only leaderboard score.
 
-## MVP promise
+## Phase 2 promise
 
-The MVP proves one loop:
+Phase 2 proves one competitive loop: collect, expand, crush, climb.
 
 1. Read current state from the API.
-2. Scan a nearby tile on a simple 2D grid.
-3. Build or upgrade persistent miners.
-4. Assign miners to discovered asteroid sites.
-5. Watch ore accrue over time while energy capacity gates miner assignments.
+2. Collect resources with persistent miners on claimed nodes.
+3. Expand by scanning for new nodes and claiming them at distance-scaled cost.
+4. Crush resources into gravel; upgrade the crusher to unlock more resources and raise yield.
+5. Climb the gravelboard before the season resets.
 6. Use the log and API responses to understand what happened.
 
 ## Current scope
 
-- Single-player local prototype.
+- Single-player local prototype with a multiplayer-shaped leaderboard.
 - Central HTTP API.
-- Static discrete 2D grid.
-- Four scan directions: `north`, `east`, `south`, `west`.
-- Persistent miners assigned to asteroid sites.
-- Passive ore generation and fixed energy capacity.
+- Static discrete 2D grid of nodes; each node contains multiple sites.
+- Four scan directions: `north`, `east`, `south`, `west`; scan duration grows with distance.
+- Four uncapped resources: ore, ice, gas, crystal.
+- Node claiming with distance-scaled multi-resource costs.
+- Persistent miners assigned to deposit sites on claimed nodes.
+- Energy as fixed miner assignment capacity.
+- Crusher tiers that unlock resources and raise gravel yield.
+- Conversion of resources into gravel, the cumulative score.
+- A single gravelboard ranked by season gravel.
+- Seasons; in the prototype, server restart equals season reset.
+- A codernaut identity with a fixed location at the home node.
 - Small TypeScript starter client with CLI, bot, and onboarding GUI.
 - OpenAPI document for the current API.
 - Polling-based timed actions.
-- Clear error responses and idempotent scan retries.
+- Clear error responses and idempotent retries for scans, claims, and conversions.
 
-## Out of scope for MVP
+## Out of scope
 
-- Multiplayer.
-- Shared world map.
-- Trading and markets.
-- Combat, raids, hazards, factions, and seasons.
-- Leaderboards and Slack reports.
+- Multiplayer interaction (other players on the map, shared state).
+- Markets and trading.
+- Category leaderboards.
+- Prestige mechanics.
+- Codernaut movement.
+- Combat, raids, hazards, and factions.
 - Galaxy rotation or galaxy-scale navigation.
 - Directions such as `coreward`, `rimward`, `spinward`, or `trailing`.
 - Websockets, server-sent events, and real-time push updates.
@@ -45,13 +53,14 @@ The MVP proves one loop:
 | File | Purpose |
 | --- | --- |
 | [product.md](product.md) | Product goal, audience, and non-goals |
-| [game-loop.md](game-loop.md) | First-session player loop and gameplay rules |
-| [world.md](world.md) | Static 2D grid and site model |
-| [api.md](api.md) | MVP API contract and JSON shapes |
+| [game-loop.md](game-loop.md) | Player loop, crusher arc, seasons, and gameplay rules |
+| [scaling.md](scaling.md) | The system of thought behind all scaling decisions |
+| [world.md](world.md) | Grid, nodes, sites, traits, and claiming |
+| [api.md](api.md) | API contract and JSON shapes |
 | [client.md](client.md) | Starter client, GUI, CLI, and bot expectations |
 | [performance.md](performance.md) | Performance expectations and implementation constraints |
 | [open-questions.md](open-questions.md) | Decisions still needing review |
 
 ## Promotion rule
 
-Future ideas live in `docs/later/`. Promote an idea into this folder only after we decide it belongs in the MVP. Archive historical planning notes in `docs/archive/` so they do not look like active scope.
+Future ideas live in `docs/later/`. Promote an idea into this folder only after we decide it belongs in the current scope. Archive historical planning notes in `docs/archive/` so they do not look like active scope.

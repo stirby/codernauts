@@ -1,15 +1,23 @@
 # Future economy ideas
 
-The MVP economy uses ore as the spendable resource and energy as miner assignment capacity. Anything beyond that belongs here until promoted.
+The current economy is four resources crushed into gravel at fixed server-owned rates. Anything beyond that belongs here until promoted.
 
-Possible later additions:
+## Drifting conversion rates
 
-- Multiple resources.
-- Markets.
+A market-like mechanic without player trading: the server changes conversion rates over time, and players predict the drift. Crush gas now at its current rate, or hold the balance because the rate has been trending up? This adds a prediction game on top of the existing loop and creates a reason to write smarter bots.
+
+## Trading
+
+Player-to-player trading is further out and depends on multiplayer interaction existing at all:
+
+- Markets and order books.
 - Trade routes.
 - Contracts.
+
+## Other parked ideas
+
 - Crafting or manufacturing.
 - Storage logistics.
-- Resource sinks beyond miner upgrades.
+- Resource sinks beyond claims and crusher upgrades.
 
-Guardrail: do not add economic depth until the basic miner assignment loop is easy to understand.
+Guardrail: every economic mechanic must end in gravel. A resource that cannot be gravelized has no value (see the canon in `docs/mvp/scaling.md`).

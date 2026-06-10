@@ -1,5 +1,9 @@
 export type JsonObject = Record<string, unknown>;
 
+export type ResourceName = 'ore' | 'ice' | 'gas' | 'crystal';
+
+export const resourceNames: readonly ResourceName[] = ['ore', 'ice', 'gas', 'crystal'];
+
 export interface ApiErrorBody {
   error?: {
     code?: string;
@@ -8,24 +12,38 @@ export interface ApiErrorBody {
   };
 }
 
+export interface PlayerLocation {
+  node_id?: string;
+  node_name?: string;
+  x?: number;
+  y?: number;
+  [key: string]: unknown;
+}
+
 export interface Player {
   id?: string;
   display_name?: string;
   displayName?: string;
   name?: string;
+  created_at?: string;
+  location?: PlayerLocation;
   [key: string]: unknown;
 }
 
 export interface Outpost {
   id?: string;
   name?: string;
+  node_id?: string;
   [key: string]: unknown;
 }
 
 export interface Resources {
   ore?: number;
+  ice?: number;
+  gas?: number;
+  crystal?: number;
+  rates_per_second?: Partial<Record<string, number>>;
   energy?: number;
-  credits?: number;
   max_ore?: number;
   maxOre?: number;
   max_energy?: number;
@@ -38,11 +56,94 @@ export interface Resources {
   energyAvailable?: number;
   ore_rate_per_second?: number;
   oreRatePerSecond?: number;
+  last_generated_at?: string;
+  [key: string]: unknown;
+}
+
+export interface Season {
+  id?: string;
+  name?: string;
+  started_at?: string;
+  [key: string]: unknown;
+}
+
+export interface Gravel {
+  total?: number;
+  per_hour?: number;
+  season?: Season;
+  [key: string]: unknown;
+}
+
+export interface Cost {
+  ore?: number;
+  ice?: number;
+  gas?: number;
+  crystal?: number;
+  [key: string]: unknown;
+}
+
+export interface CrusherUpgradePreview {
+  level?: number;
+  name?: string;
+  yield_multiplier?: number;
+  unlocks_resource?: string;
+  cost?: Cost;
+  [key: string]: unknown;
+}
+
+export interface Crusher {
+  level?: number;
+  name?: string;
+  yield_multiplier?: number;
+  unlocked_resources?: string[];
+  next_upgrade?: CrusherUpgradePreview;
+  [key: string]: unknown;
+}
+
+export interface ConversionRate {
+  resource?: string;
+  gravel_per_unit?: number;
+  required_crusher_level?: number;
+  unlocked?: boolean;
+  [key: string]: unknown;
+}
+
+export interface Conversions {
+  crusher?: Crusher;
+  rates?: ConversionRate[];
+  [key: string]: unknown;
+}
+
+export interface ConversionResult {
+  resource?: string;
+  amount_converted?: number;
+  gravel_per_unit?: number;
+  yield_multiplier?: number;
+  gravel_earned?: number;
+  gravel_total?: number;
+  resources?: Resources;
+  [key: string]: unknown;
+}
+
+export interface LeaderboardEntry {
+  rank?: number;
+  player_id?: string;
+  codernaut?: string;
+  gravel?: number;
+  gravel_per_hour?: number;
+  is_you?: boolean;
+  [key: string]: unknown;
+}
+
+export interface Leaderboard {
+  season?: Season;
+  entries?: LeaderboardEntry[];
   [key: string]: unknown;
 }
 
 export interface Site {
   id: string;
+  node_id?: string;
   name?: string;
   kind?: string;
   type?: string;
@@ -52,16 +153,34 @@ export interface Site {
   richness?: number;
   assigned_miner_id?: string;
   assignedMinerId?: string;
+  base_rate_per_second?: number;
   base_ore_rate_per_second?: number;
   baseOreRatePerSecond?: number;
+  discovered_at?: string;
   discovered?: boolean;
   depleted?: boolean;
+  [key: string]: unknown;
+}
+
+export interface Node {
+  id: string;
+  name?: string;
+  kind?: string;
+  trait?: string;
+  x?: number;
+  y?: number;
+  distance?: number;
+  discovered_at?: string;
+  claimed_by?: string;
+  claim_cost?: Cost;
+  sites?: Site[];
   [key: string]: unknown;
 }
 
 export interface Sector {
   id?: string;
   name?: string;
+  nodes?: Node[];
   sites?: Site[];
   discovered_sites?: Site[];
   discoveredSites?: Site[];
@@ -73,12 +192,14 @@ export interface Miner {
   name?: string;
   level?: number;
   status?: string;
+  resource?: string;
   site_id?: string | null;
   siteId?: string | null;
   assigned_site_id?: string | null;
   assignedSiteId?: string | null;
   assigned_site_name?: string | null;
   assignedSiteName?: string | null;
+  rate_per_second?: number;
   ore_rate_per_second?: number;
   oreRatePerSecond?: number;
   energy_requirement?: number;
@@ -87,12 +208,7 @@ export interface Miner {
   buildCost?: Cost;
   next_upgrade_cost?: Cost;
   nextUpgradeCost?: Cost;
-  [key: string]: unknown;
-}
-
-export interface Cost {
-  ore?: number;
-  energy?: number;
+  next_upgrade_preview?: JsonObject;
   [key: string]: unknown;
 }
 
@@ -103,6 +219,7 @@ export interface Action {
   resolves_at?: string;
   resolvesAt?: string;
   request?: Record<string, string>;
+  result?: JsonObject;
   [key: string]: unknown;
 }
 
@@ -125,6 +242,8 @@ export interface Status {
   player?: Player;
   outpost?: Outpost;
   resources?: Resources;
+  gravel?: Gravel;
+  crusher?: Crusher;
   miners?: Miner[];
   sector?: Sector;
   active_actions?: Action[];
@@ -188,6 +307,39 @@ export class CodernautsClient {
 
   async sector(): Promise<Sector> {
     return this.request<Sector>('GET', '/v1/sector');
+  }
+
+  async leaderboard(): Promise<Leaderboard> {
+    return this.request<Leaderboard>('GET', '/v1/leaderboard');
+  }
+
+  async conversions(): Promise<Conversions> {
+    return this.request<Conversions>('GET', '/v1/conversions');
+  }
+
+  /**
+   * Crushes a resource into gravel. Omitting the amount converts the full
+   * integer balance of that resource.
+   */
+  async convert(resource: string, amount?: number, idempotencyKey?: string): Promise<ConversionResult> {
+    return this.request<ConversionResult>('POST', `/v1/conversions/${encodeURIComponent(resource)}`, {
+      body: typeof amount === 'number' ? { amount } : undefined,
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+    });
+  }
+
+  /**
+   * Claims a discovered node so its sites can be worked. The claim endpoint
+   * needs no body; the claim cost is server-side and distance-scaled.
+   */
+  async claimNode(nodeId: string, idempotencyKey?: string): Promise<Node> {
+    return this.request<Node>('POST', `/v1/nodes/${encodeURIComponent(nodeId)}/claim`, {
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+    });
+  }
+
+  async upgradeCrusher(): Promise<Crusher> {
+    return this.request<Crusher>('POST', '/v1/crusher/upgrade');
   }
 
   async miners(): Promise<Miner[]> {
